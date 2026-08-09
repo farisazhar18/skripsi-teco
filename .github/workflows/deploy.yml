@@ -1,0 +1,22 @@
+name: Auto Deploy ke InfinityFree
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: 🎉 Proses Deploy Berjalan
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Mengambil kode terbaru
+        uses: actions/checkout@v4
+
+      - name: 📂 Mengirim file via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.3
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /htdocs/
