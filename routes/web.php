@@ -122,7 +122,7 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
         ->middleware('role:owner,operational_manager,kasir,barista');
 
     Route::resource('produk', ProdukController::class)
-        ->middleware('role:owner,kasir,barista');
+        ->middleware('role:owner,operational_manager,kasir,barista');
 
     Route::resource('resep-produk', ResepProdukController::class)
         ->middleware('role:owner,operational_manager,barista');
