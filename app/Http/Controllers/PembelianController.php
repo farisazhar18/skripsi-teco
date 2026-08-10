@@ -344,10 +344,17 @@ class PembelianController extends Controller
     {
         $pembelian = Pembelian::with('bahanBaku')->findOrFail($id);
         
-        // Kita siapin file pdf_po.blade.php buat desain suratnya nanti
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pembelian.pdf_po', compact('pembelian'));
+        // Cari urutan pengadaan ke berapa
+        $pengadaanKe = Pembelian::select('created_at')
+            ->where('created_at', '<=', $pembelian->created_at)
+            ->groupBy('created_at')
+            ->get()
+            ->count();
         
-        return $pdf->download('PO_Pengadaan_Logistik_' . $pembelian->id . '.pdf');
+        // Kita siapin file pdf_po.blade.php buat desain suratnya nanti
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pembelian.pdf_po', compact('pembelian', 'pengadaanKe'));
+        
+        return $pdf->download('PO_Pengadaan_Logistik_' . str_pad($pengadaanKe, 4, '0', STR_PAD_LEFT) . '.pdf');
     }
 
     // FUNGSI BUAT NAMPILIN HALAMAN PILIH BARANG PO
@@ -374,11 +381,22 @@ class PembelianController extends Controller
             ->whereIn('id', $request->pembelian_ids)
             ->get();
 
+        // Cari urutan pengadaan ke berapa
+        $patokanCreatedAt = $pembelians->first()->created_at;
+        $pengadaanKe = Pembelian::select('created_at')
+            ->where('created_at', '<=', $patokanCreatedAt)
+            ->groupBy('created_at')
+            ->get()
+            ->count();
+
+        // Tandai bahwa barang-barang ini sudah dicetak PO-nya
+        Pembelian::whereIn('id', $request->pembelian_ids)->update(['is_po_dicetak' => true]);
+
         $nama_supplier = $request->nama_supplier ?? '.......................................';
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pembelian.pdf_po_multi', compact('pembelians', 'nama_supplier'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pembelian.pdf_po_multi', compact('pembelians', 'nama_supplier', 'pengadaanKe'));
         
-        return $pdf->download('PO_Logistik_' . date('Ymd') . '.pdf');
+        return $pdf->download('PO_Logistik_' . date('Ymd') . '_' . str_pad($pengadaanKe, 4, '0', STR_PAD_LEFT) . '.pdf');
     }
 
     // FUNGSI BARU: RIWAYAT STOK MASUK DARI EVENT

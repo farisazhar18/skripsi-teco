@@ -28,7 +28,7 @@
     <table class="info-table">
         <tr>
             <td width="20%"><strong>No. PO</strong></td>
-            <td width="30%">: PO-{{ date('Ymd') }}-{{ str_pad($pembelians->first()->id ?? 1, 4, '0', STR_PAD_LEFT) }}</td>
+            <td width="30%">: PO-{{ date('Ymd') }}-{{ str_pad($pengadaanKe ?? 1, 4, '0', STR_PAD_LEFT) }}</td>
             <td width="20%"><strong>Kepada Yth.</strong></td>
             <td width="30%">: <strong>{{ strtoupper($nama_supplier) }}</strong></td>
         </tr>

@@ -249,6 +249,12 @@ class EventController extends Controller
             $detailsToPrint = $event->eventDetails; 
         }
         
+        // Tandai bahwa barang-barang event ini sudah dicetak PO-nya
+        $idsToUpdate = $detailsToPrint->pluck('id')->toArray();
+        if (!empty($idsToUpdate)) {
+            \App\Models\EventDetail::whereIn('id', $idsToUpdate)->update(['is_po_dicetak' => true]);
+        }
+        
         $pdf = \PDF::loadView('event.po_event', compact('event', 'nama_supplier', 'detailsToPrint'));
         return $pdf->download('PO_Event_' . str_replace(' ', '_', $event->nama_event) . '.pdf');
     }

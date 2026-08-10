@@ -32,12 +32,21 @@
                 <tbody>
                     @foreach($event->eventDetails as $detail)
                         @if($detail->jumlah_beli > 0)
-                        <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <tr style="border-bottom: 1px solid #e5e7eb; {{ $detail->is_po_dicetak ? 'background-color: #f9fafb; opacity: 0.6;' : '' }}">
                             <td style="padding: 12px; text-align: center;">
-                                <input type="checkbox" name="detail_ids[]" value="{{ $detail->id }}" style="transform: scale(1.5); cursor: pointer;">
+                                @if($detail->is_po_dicetak)
+                                    <input type="checkbox" disabled style="transform: scale(1.5);">
+                                @else
+                                    <input type="checkbox" name="detail_ids[]" value="{{ $detail->id }}" style="transform: scale(1.5); cursor: pointer;">
+                                @endif
                             </td>
-                            <td style="padding: 12px; font-weight: 600; font-size: 15px;">{{ $detail->bahanBaku->nama_bahan ?? '-' }}</td>
-                            <td style="padding: 12px; text-align: center; color: #047857; font-weight: bold; font-size: 15px;">
+                            <td style="padding: 12px; font-weight: 600; font-size: 15px; {{ $detail->is_po_dicetak ? 'text-decoration: line-through; color: #9ca3af;' : '' }}">
+                                {{ $detail->bahanBaku->nama_bahan ?? '-' }}
+                                @if($detail->is_po_dicetak)
+                                    <span style="font-size: 11px; font-weight: bold; color: #059669; margin-left: 10px;">✅ PO Sudah Dicetak</span>
+                                @endif
+                            </td>
+                            <td style="padding: 12px; text-align: center; color: #047857; font-weight: bold; font-size: 15px; {{ $detail->is_po_dicetak ? 'text-decoration: line-through; color: #9ca3af;' : '' }}">
                                 {{ $detail->jumlah_beli }} {{ $detail->satuan_beli }}
                             </td>
                         </tr>

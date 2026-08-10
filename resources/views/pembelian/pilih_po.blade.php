@@ -26,13 +26,26 @@
                 </thead>
                 <tbody>
                     @foreach($pembelians as $item)
-                    <tr style="border-bottom: 1px solid #eae5dc;">
+                    <tr style="border-bottom: 1px solid #eae5dc; {{ $item->is_po_dicetak ? 'background-color: #f9fafb; opacity: 0.6;' : '' }}">
                         <td style="padding: 10px; text-align: center;">
-                            <input type="checkbox" name="pembelian_ids[]" value="{{ $item->id }}" style="transform: scale(1.5);">
+                            @if($item->is_po_dicetak)
+                                <input type="checkbox" disabled style="transform: scale(1.5);">
+                            @else
+                                <input type="checkbox" name="pembelian_ids[]" value="{{ $item->id }}" style="transform: scale(1.5);">
+                            @endif
                         </td>
-                        <td style="padding: 10px;">{{ date('d-m-Y', strtotime($item->updated_at ?? $item->tanggal)) }}</td>
-                        <td style="padding: 10px; font-weight: bold;">{{ $item->bahanBaku->nama_bahan ?? '-' }}</td>
-                        <td style="padding: 10px;">{{ $item->jumlah }} {{ $item->satuan_beli }}</td>
+                        <td style="padding: 10px; {{ $item->is_po_dicetak ? 'text-decoration: line-through; color: #9ca3af;' : '' }}">
+                            {{ date('d-m-Y', strtotime($item->updated_at ?? $item->tanggal)) }}
+                            @if($item->is_po_dicetak)
+                                <br><span style="font-size: 11px; font-weight: bold; color: #059669;">✅ PO Sudah Dicetak</span>
+                            @endif
+                        </td>
+                        <td style="padding: 10px; font-weight: bold; {{ $item->is_po_dicetak ? 'text-decoration: line-through; color: #9ca3af;' : '' }}">
+                            {{ $item->bahanBaku->nama_bahan ?? '-' }}
+                        </td>
+                        <td style="padding: 10px; {{ $item->is_po_dicetak ? 'text-decoration: line-through; color: #9ca3af;' : '' }}">
+                            {{ $item->jumlah }} {{ $item->satuan_beli }}
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>
