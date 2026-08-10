@@ -330,7 +330,7 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
 
 require __DIR__.'/auth.php';
 
-Route::get('/storage/{path}', function ($path) {
+Route::get('/foto-bukti/{path}', function ($path) {
     $filePath = storage_path('app/public/' . $path);
     
     if (!\Illuminate\Support\Facades\File::exists($filePath)) {

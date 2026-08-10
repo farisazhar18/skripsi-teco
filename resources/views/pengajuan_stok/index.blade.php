@@ -74,8 +74,8 @@
 
         <td style="padding: 12px 10px; text-align: center;">
             @if(!empty($item->foto_bukti))
-                <a href="{{ asset('storage/' . $item->foto_bukti) }}" target="_blank" title="Klik untuk memperbesar">
-                    <img src="{{ asset('storage/' . $item->foto_bukti) }}" alt="Bukti Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;">
+                <a href="{{ url('foto-bukti/' . $item->foto_bukti) }}" target="_blank" title="Klik untuk memperbesar">
+                    <img src="{{ url('foto-bukti/' . $item->foto_bukti) }}" alt="Bukti Foto" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;">
                 </a>
             @else
                 <span style="color: #94a3b8; font-style: italic; font-size: 12px;">Tanpa Foto</span>
