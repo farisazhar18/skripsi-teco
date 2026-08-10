@@ -90,7 +90,7 @@
 
         <div class="form-group">
             <label>Alasan Perbedaan Stok <span style="color:red;">*</span></label>
-            <textarea name="alasan" rows="3" required placeholder="Misal: Basi, kadaluwarsa, tumpah, kemasan rusak, atau produk gagal..." style="width: 100%;" class="form-control"></textarea>
+            <textarea name="alasan" rows="3" required placeholder="Misal: Basi, kadaluwarsa, tumpah, kemasan rusak, atau produk gagal..." style="width: 100%;" class="form-control">@if(request('ref') == 'distribusi')Pelaporan selisih barang: Logistik mengirimkan sejumlah {{ request('qty') }} {{ $data->satuan }} pada distribusi tanggal {{ date('d M Y', strtotime(request('tgl'))) }}, namun fisik yang diterima rusak / hilang / kurang. Mohon disesuaikan.@endif</textarea>
         </div>
 
         <div class="form-group">

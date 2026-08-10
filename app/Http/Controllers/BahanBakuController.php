@@ -405,6 +405,74 @@ class BahanBakuController extends Controller
     }
 
     // =========================================================
+    // FUNGSI LAPOR SELISIH DISTRIBUSI (BARISTA)
+    // =========================================================
+    public function laporSelisih(Request $request, $distribusi_id)
+    {
+        $distribusi = \App\Models\Distribusi::with('bahanBaku')->findOrFail($distribusi_id);
+        $bahanBaku = $distribusi->bahanBaku;
+        
+        // Pengecekan outlet agar barista tidak bisa lapor outlet lain
+        if (auth()->user()->role == 'barista' && $distribusi->outlet != session('outlet_aktif')) {
+            abort(403);
+        }
+
+        $dikirim = $distribusi->jumlah;
+        $tanggal = $distribusi->created_at->format('Y-m-d');
+
+        return view('bahan_baku.lapor_selisih', compact('bahanBaku', 'dikirim', 'tanggal', 'distribusi'));
+    }
+
+    public function storeSelisih(Request $request, $distribusi_id)
+    {
+        $distribusi = \App\Models\Distribusi::findOrFail($distribusi_id);
+        $bahanBaku = BahanBaku::findOrFail($distribusi->bahan_baku_id);
+        
+        $request->validate([
+            'fisik_diterima' => 'required|numeric|min:0',
+            'alasan' => 'required|string',
+            'foto_bukti' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        $dikirim = $distribusi->jumlah;
+        $diterima = $request->fisik_diterima;
+
+        // KALKULASI MATEMATIKA: 
+        // Stok di sistem saat ini (sudah ditambah $dikirim oleh logistik)
+        $stokSekarang = $bahanBaku->stok; 
+        
+        // Berapa barang yang hilang / kurang
+        $selisihHilang = $dikirim - $diterima;
+
+        // Stok yang benar-benar ada di toko (Stok Aktual)
+        $stokAktual = $stokSekarang - $selisihHilang;
+
+        // Upload Bukti
+        $fotoPath = null;
+        if ($request->hasFile('foto_bukti')) {
+            $fotoPath = $request->file('foto_bukti')->store('bukti_stok', 'public');
+        }
+
+        // Buat Pengajuan Stok
+        PengajuanStok::create([
+            'bahan_baku_id' => $bahanBaku->id,
+            'outlet' => $bahanBaku->outlet,
+            'stok_seharusnya' => $stokSekarang, // Stok sebelum disesuaikan
+            'stok_aktual' => $stokAktual, // Stok hasil pengurangan barang hilang
+            'alasan' => "Selisih Distribusi tgl " . $distribusi->created_at->format('d M Y') . " (Dikirim: $dikirim, Diterima: $diterima). Keterangan: " . $request->alasan,
+            'foto_bukti' => $fotoPath,
+            'status' => 'pending',
+            'user_id' => auth()->user()->id,
+        ]);
+
+        // Simpan jumlah_diterima di tabel distribusi agar ada indikator visual
+        $distribusi->jumlah_diterima = $diterima;
+        $distribusi->save();
+
+        return redirect()->route('bahan-baku.masuk')->with('success', 'Laporan selisih distribusi berhasil dikirim ke Manager. Menunggu persetujuan.');
+    }
+
+    // =========================================================
     // FUNGSI ACC PENGADUAN STOK OLEH MANAGER
     // =========================================================
     public function approvePengajuan($id)

@@ -142,6 +142,15 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
         ->middleware('role:owner,operational_manager,logistik,barista')
         ->name('bahan-baku.rekap.pdf');
 
+    // 🔥 FORM KHUSUS LAPOR SELISIH DISTRIBUSI (BARISTA & OWNER)
+    Route::get('/bahan-baku/distribusi/{distribusi_id}/lapor', [\App\Http\Controllers\BahanBakuController::class, 'laporSelisih'])
+        ->middleware('role:owner,barista')
+        ->name('bahan-baku.lapor-selisih');
+    
+    Route::post('/bahan-baku/distribusi/{distribusi_id}/lapor', [\App\Http\Controllers\BahanBakuController::class, 'storeSelisih'])
+        ->middleware('role:owner,barista')
+        ->name('bahan-baku.store-selisih');
+
     Route::resource('bahan-baku', BahanBakuController::class)
         ->middleware('role:owner,operational_manager,logistik,barista');
 

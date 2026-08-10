@@ -51,8 +51,9 @@
                 <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
                     <th style="padding: 12px 15px; text-align: center; width: 20%;">Waktu Kirim</th>
                     <th style="padding: 12px 15px; text-align: center; width: 20%;">Outlet</th>
-                    <th style="padding: 12px 15px; text-align: left; width: 35%;">Nama Bahan Baku</th>
-                    <th style="padding: 12px 15px; text-align: center; width: 25%;">Jumlah Diterima</th>
+                    <th style="padding: 12px 15px; text-align: left; width: 30%;">Nama Bahan Baku</th>
+                    <th style="padding: 12px 15px; text-align: center; width: 15%;">Jumlah Diterima</th>
+                    <th style="padding: 12px 15px; text-align: center; width: 15%;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -68,7 +69,25 @@
                         {{ $item->bahanBaku->nama_bahan ?? 'Data Terhapus' }}
                     </td>
                     <td style="padding: 12px 15px; text-align: center; font-weight: bold; color: #059669; font-size: 15px;">
-                        +{{ $item->jumlah }} {{ $item->satuan }}
+                        @if($item->jumlah_diterima !== null)
+                            <span style="text-decoration: line-through; color: #94a3b8; font-size: 13px;">+{{ $item->jumlah }} {{ $item->satuan }}</span><br>
+                            <span style="color: #ea580c; font-size: 14px;">Terima: {{ $item->jumlah_diterima }} {{ $item->satuan }}</span>
+                        @else
+                            +{{ $item->jumlah }} {{ $item->satuan }}
+                        @endif
+                    </td>
+                    <td style="padding: 12px 15px; text-align: center;">
+                        @if($item->jumlah_diterima !== null)
+                            <span style="font-size: 11px; background-color: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 4px; font-weight: bold; border: 1px solid #fcd34d;">
+                                ✅ Direvisi
+                            </span>
+                        @elseif(in_array(auth()->user()->role, ['barista', 'owner']) && $item->bahan_baku_id)
+                            <a href="{{ route('bahan-baku.lapor-selisih', ['distribusi_id' => $item->id]) }}" title="Lapor jika jumlah yang diterima tidak sesuai" style="font-size: 11px; background-color: #fee2e2; color: #dc2626; padding: 4px 8px; border-radius: 4px; text-decoration: none; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s; font-weight: bold;">
+                                ⚠️ Lapor Selisih
+                            </a>
+                        @else
+                            <span style="color: #94a3b8; font-size: 12px;">-</span>
+                        @endif
                     </td>
                 </tr>
                 @empty

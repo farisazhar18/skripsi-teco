@@ -2,8 +2,12 @@
 <html lang="id">
 <head>
     <title>Keranjang - Terminal Coffee</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('logo-terminal.png') }}">
+
     <style>
         * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background: #f8f6f2; color: #183f37; margin: 0; padding: 20px 20px 80px; }

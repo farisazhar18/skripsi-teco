@@ -3,6 +3,9 @@
 <head>
     <title>Terminal Coffee POS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('logo-terminal.png') }}">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -1748,17 +1751,16 @@
                     </div>
                 @endif
 
-                {{-- 4. TUGAS EVENT (Hanya Muncul buat Barista Event!) --}}
-                @if(session('outlet_aktif') == 'event')
-                    @php 
-                        $tugasBarista = \App\Models\Event::where('status', 'diserahkan')->count(); 
-                    @endphp
+                {{-- 4. EVENT MANAGEMENT (Selalu Muncul agar Barista tahu jadwal event) --}}
+                @php 
+                    $tugasBarista = \App\Models\Event::where('status', 'diserahkan')->count(); 
+                @endphp
 
-                    <div class="dropdown-wrapper">
+                <div class="dropdown-wrapper">
                     <button class="dropdown-btn" onclick="toggleDropdown(this)">
                         <div class="dropdown-badge-wrapper">
                             <span>🎪 Event Management</span>
-                            @if($tugasBarista > 0)
+                            @if($tugasBarista > 0 && session('outlet_aktif') == 'event')
                                 <span class="notif-badge">
                                     {{ $tugasBarista }}
                                 </span>
@@ -1767,19 +1769,26 @@
                         <span class="arrow">▼</span>
                     </button>
                     <div class="dropdown-container">
-                        <a href="{{ route('event.tugas') }}" class="{{ Route::is('event.tugas*') ? 'active-menu' : '' }}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; color: #efe6d8; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">
-                            <div class="dropdown-badge-wrapper">
-                                <span>🎪 Tugas Event</span>
-                            </div>
-                            @if($tugasBarista > 0)
-                                <span class="notif-badge">
-                                    {{ $tugasBarista }}
-                                </span>
-                            @endif
+                        <!-- Selalu Muncul: Daftar Event biar Barista bisa persiapan -->
+                        <a href="{{ route('event.index') }}" class="{{ Route::is('event.index*') ? 'active-menu' : '' }}" style="display: block; padding: 12px 15px; color: #efe6d8; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">
+                            📋 Jadwal & Daftar Event
                         </a>
+
+                        <!-- Tugas Event: Muncul pas lagi aktif di outlet event -->
+                        @if(session('outlet_aktif') == 'event')
+                            <a href="{{ route('event.tugas') }}" class="{{ Route::is('event.tugas*') ? 'active-menu' : '' }}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; color: #efe6d8; text-decoration: none; border-radius: 8px; margin-bottom: 5px;">
+                                <div class="dropdown-badge-wrapper">
+                                    <span>🎪 Tugas Event</span>
+                                </div>
+                                @if($tugasBarista > 0)
+                                    <span class="notif-badge">
+                                        {{ $tugasBarista }}
+                                    </span>
+                                @endif
+                            </a>
+                        @endif
                     </div>
-                    </div>
-                @endif
+                </div>
 
                 {{-- Lanjutan Menu Harian (Report) --}}
                 @if(session('outlet_aktif') != 'event')
