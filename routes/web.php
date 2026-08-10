@@ -329,3 +329,16 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    
+    if (!\Illuminate\Support\Facades\File::exists($filePath)) {
+        abort(404);
+    }
+    
+    $file = \Illuminate\Support\Facades\File::get($filePath);
+    $type = \Illuminate\Support\Facades\File::mimeType($filePath);
+    
+    return \Illuminate\Support\Facades\Response::make($file, 200)->header("Content-Type", $type);
+})->where('path', '.*');
