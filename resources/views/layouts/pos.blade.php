@@ -1620,7 +1620,7 @@
                 </div>
 
                 @php
-                    $adaSisaEvent = isset($data) && $data->contains(function ($item) {
+                    $adaSisaEvent = isset($data) && ($data instanceof \Illuminate\Support\Collection) && $data->contains(function ($item) {
                         return str_contains($item->keterangan, 'Sisa fisik aktual Event');
                     });
                 @endphp
