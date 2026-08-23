@@ -36,6 +36,19 @@
         </div>
 
         <div class="form-group">
+            <label>Kategori Bahan</label>
+            <select name="kategori" class="form-control" required style="width: 100%;">
+                <option value="">-- Pilih Kategori --</option>
+                <option value="Kopi & Roastery" {{ $data->kategori == 'Kopi & Roastery' ? 'selected' : '' }}>☕ Kopi & Roastery</option>
+                <option value="Powder & Sirup" {{ $data->kategori == 'Powder & Sirup' ? 'selected' : '' }}>🍯 Powder & Sirup</option>
+                <option value="Susu & Cairan" {{ $data->kategori == 'Susu & Cairan' ? 'selected' : '' }}>🥛 Susu & Cairan</option>
+                <option value="Bahan Makanan" {{ $data->kategori == 'Bahan Makanan' ? 'selected' : '' }}>🥐 Bahan Makanan</option>
+                <option value="Packaging" {{ $data->kategori == 'Packaging' ? 'selected' : '' }}>📦 Packaging (Cup, Lid, Sedotan)</option>
+                <option value="Lainnya" {{ $data->kategori == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
+            </select>
+        </div>
+
+        <div class="form-group">
             <label>Satuan Dasarnya</label>
             <input type="text" name="satuan" value="{{ $data->satuan }}" required style="width: 100%;" class="form-control">
         </div>
@@ -107,7 +120,11 @@
 
     <div class="form-actions" style="margin-top: 25px; display: flex; gap: 10px;">
         <button type="submit" class="btn" style="background-color: #183f37; color: white;">
-            Simpan / Ajukan
+            @if(in_array(auth()->user()->role, ['owner', 'operational_manager', 'logistik']))
+                💾 Simpan Perubahan
+            @else
+                📨 Ajukan Penyesuaian
+            @endif
         </button>
         <a href="/bahan-baku" class="btn-secondary" style="padding: 10px 20px; border-radius: 6px; text-decoration: none; border: 1px solid #ccc; color: #333;">
             ← Batal
