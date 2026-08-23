@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CustomerOrderController;
 use App\Http\Controllers\PengajuanStokController;
 use App\Http\Controllers\LaporanEventController;
+use App\Http\Controllers\PollingController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -107,6 +108,13 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('role:owner,operational_manager,logistik,kasir,barista')
         ->name('dashboard');
+
+    // =========================================================
+    // POLLING API (Auto-refresh tanpa reload halaman)
+    // =========================================================
+    Route::get('/api/polling/pengajuan-pengadaan', [PollingController::class, 'pengajuanPengadaan'])->name('polling.pengadaan');
+    Route::get('/api/polling/pengajuan-stok', [PollingController::class, 'pengajuanStok'])->name('polling.stok');
+    Route::get('/api/polling/pesanan-baru', [PollingController::class, 'pesananBaru'])->name('polling.pesanan');
 
     Route::post('/penjualan/konfirmasi/{id}', [PenjualanController::class, 'konfirmasiPembayaran'])
         ->middleware('role:owner,kasir')

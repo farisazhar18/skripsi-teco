@@ -3,6 +3,10 @@
 <head>
     <title>Terminal Coffee POS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @auth
+    <meta name="user-role" content="{{ auth()->user()->role }}">
+    @endauth
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('logo-terminal.png') }}">
@@ -1937,6 +1941,271 @@
 
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+{{-- ============================================================= --}}
+{{-- TOAST NOTIFICATION CSS & POLLING JAVASCRIPT                   --}}
+{{-- ============================================================= --}}
+<style>
+    /* Toast Container */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+
+    /* Individual Toast */
+    .toast-notif {
+        pointer-events: auto;
+        background: #ffffff;
+        border-left: 5px solid #059669;
+        border-radius: 10px;
+        padding: 14px 20px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 320px;
+        max-width: 420px;
+        cursor: pointer;
+        transform: translateX(120%);
+        animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        transition: opacity 0.3s, transform 0.3s;
+    }
+
+    .toast-notif:hover {
+        transform: scale(1.02);
+        box-shadow: 0 10px 35px rgba(0,0,0,0.2);
+    }
+
+    .toast-notif.toast-dismiss {
+        animation: toastSlideOut 0.3s ease-in forwards;
+    }
+
+    .toast-notif .toast-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .toast-notif .toast-body {
+        flex: 1;
+    }
+
+    .toast-notif .toast-title {
+        font-weight: 700;
+        font-size: 14px;
+        color: #1e293b;
+        margin-bottom: 2px;
+    }
+
+    .toast-notif .toast-msg {
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .toast-notif .toast-close {
+        background: none;
+        border: none;
+        font-size: 18px;
+        color: #94a3b8;
+        cursor: pointer;
+        padding: 0 4px;
+        flex-shrink: 0;
+    }
+
+    .toast-notif .toast-close:hover {
+        color: #475569;
+    }
+
+    @keyframes toastSlideIn {
+        from { transform: translateX(120%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes toastSlideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(120%); opacity: 0; }
+    }
+
+    /* Pulse dot for sidebar badge */
+    .polling-badge {
+        background: #ef4444;
+        color: white;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 50px;
+        margin-left: 6px;
+        animation: pulseBadge 2s infinite;
+    }
+
+    @keyframes pulseBadge {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+</style>
+
+{{-- Toast Container --}}
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+(function() {
+    // =========================================================
+    // POLLING SYSTEM — Auto-check data baru setiap 30 detik
+    // =========================================================
+    const POLL_INTERVAL = 30000; // 30 detik
+    const roleMeta = document.querySelector('meta[name="user-role"]');
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+
+    // Kalau belum login atau meta tag tidak ada, skip polling
+    if (!roleMeta || !csrfMeta) return;
+
+    const userRole = roleMeta.content;
+    let lastCounts = {
+        pengadaan: -1,
+        stok: -1,
+        pesanan: -1
+    };
+
+    // Tentukan endpoint mana yang di-poll berdasarkan role
+    function getEndpoints() {
+        const endpoints = [];
+
+        if (['owner', 'operational_manager', 'logistik'].includes(userRole)) {
+            endpoints.push({
+                key: 'pengadaan',
+                url: '/api/polling/pengajuan-pengadaan',
+                title: 'Pengajuan Pengadaan',
+                icon: '📝',
+                link: '/pengajuan-pengadaan'
+            });
+        }
+
+        if (['owner', 'operational_manager'].includes(userRole)) {
+            endpoints.push({
+                key: 'stok',
+                url: '/api/polling/pengajuan-stok',
+                title: 'Pengajuan Penyesuaian Stok',
+                icon: '📦',
+                link: '/pengajuan-stok'
+            });
+        }
+
+        if (['owner', 'operational_manager', 'kasir', 'barista'].includes(userRole)) {
+            endpoints.push({
+                key: 'pesanan',
+                url: '/api/polling/pesanan-baru',
+                title: 'Pesanan Masuk',
+                icon: '🛎️',
+                link: '/penjualan'
+            });
+        }
+
+        return endpoints;
+    }
+
+    // Fungsi tampilkan toast notification
+    function showToast(icon, title, message, link) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast-notif';
+        toast.innerHTML = `
+            <span class="toast-icon">${icon}</span>
+            <div class="toast-body">
+                <div class="toast-title">${title}</div>
+                <div class="toast-msg">${message}</div>
+            </div>
+            <button class="toast-close" onclick="event.stopPropagation(); this.parentElement.classList.add('toast-dismiss'); setTimeout(() => this.parentElement.remove(), 300);">&times;</button>
+        `;
+
+        // Klik toast → langsung ke halaman terkait
+        if (link) {
+            toast.addEventListener('click', function() {
+                window.location.href = link;
+            });
+        }
+
+        container.appendChild(toast);
+
+        // Auto-dismiss setelah 8 detik
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.classList.add('toast-dismiss');
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 8000);
+    }
+
+    // Fungsi utama polling
+    async function pollUpdates() {
+        const endpoints = getEndpoints();
+
+        for (const ep of endpoints) {
+            try {
+                const response = await fetch(ep.url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) continue;
+
+                const data = await response.json();
+                const newCount = data.count || 0;
+
+                // Pertama kali load → simpan jumlah awal, jangan notif
+                if (lastCounts[ep.key] === -1) {
+                    lastCounts[ep.key] = newCount;
+                    continue;
+                }
+
+                // Ada data baru!
+                if (newCount > lastCounts[ep.key]) {
+                    const diff = newCount - lastCounts[ep.key];
+                    showToast(
+                        ep.icon,
+                        ep.title,
+                        `Ada ${diff} data baru! Klik untuk lihat.`,
+                        ep.link
+                    );
+
+                    // Juga mainkan bunyi notifikasi browser jika diizinkan
+                    try {
+                        if (Notification.permission === 'granted') {
+                            new Notification('🔔 ' + ep.title, {
+                                body: `Ada ${diff} data baru masuk!`,
+                                icon: '/logo-terminal.png'
+                            });
+                        }
+                    } catch(e) { /* ignore */ }
+                }
+
+                lastCounts[ep.key] = newCount;
+
+            } catch (err) {
+                // Gagal fetch? Skip aja, coba lagi nanti
+                console.log('Polling error:', ep.key, err);
+            }
+        }
+    }
+
+    // Minta izin browser notification (opsional, user bisa tolak)
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
+    // Jalankan polling pertama kali setelah 3 detik (biar halaman selesai loading)
+    setTimeout(pollUpdates, 3000);
+
+    // Lalu ulangi setiap 30 detik
+    setInterval(pollUpdates, POLL_INTERVAL);
+})();
+</script>
 
 </body>
 </html>
