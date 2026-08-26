@@ -9,12 +9,17 @@
 <!-- 🔥 BAGIAN ACTION BAR & PENCARIAN REAL-TIME -->
 <div class="action-bar">
     
-    <!-- Cuma Owner dan Kasir yang bisa lihat tombol ini -->
-    @if(in_array($role, ['owner', 'kasir']))
-        <a href="{{ route('penjualan.create') }}" class="btn">Tambah Pesanan</a>
-    @else
-        <div></div> <!-- Pengganjal biar form pencarian tetap di kanan -->
-    @endif
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <!-- Cuma Owner dan Kasir yang bisa lihat tombol Tambah Pesanan -->
+        @if(in_array($role, ['owner', 'kasir']))
+            <a href="{{ route('penjualan.create') }}" class="btn">Tambah Pesanan</a>
+        @endif
+
+        <!-- Tombol shortcut ke Laporan Penjualan -->
+        @if(in_array($role, ['owner', 'kasir', 'operational_manager']))
+            <a href="{{ url('/laporan-penjualan') }}" class="btn" style="background: #64748b;">📋 Laporan Penjualan</a>
+        @endif
+    </div>
     
     <!-- Filter Nama Real-time (Tanpa Tombol Cari) -->
     <div class="search-box">
