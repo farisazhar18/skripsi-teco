@@ -55,7 +55,6 @@ class PembelianController extends Controller
                 // Jumlahkan total sisa stok dari semua transaksi bahan ini
                 'sisa_distribusi' => $group->sum('sisa_distribusi')
             ];
-        })
         });
 
         // 3. Sorting berdasarkan request user
