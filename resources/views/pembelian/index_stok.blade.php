@@ -25,15 +25,27 @@
 <h1 class="page-title">Daftar Pengadaan & Stok Gudang</h1>
 
 <div class="flex flex-wrap gap-md mb-md items-center" style="justify-content: space-between;">
-    <a href="{{ route('pembelian.stokEvent') }}" class="btn btn-rekap-masuk" style="background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
-        🎪 Riwayat Stok dari Event
-    </a>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <a href="{{ route('pembelian.stokEvent') }}" class="btn btn-rekap-masuk" style="background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+            🎪 Riwayat Stok dari Event
+        </a>
+        
+        <!-- FORM PENCARIAN -->
+        <form action="{{ route('pembelian.stok') }}" method="GET" style="margin: 0; display: flex; gap: 5px;">
+            <input type="hidden" name="sort" value="{{ $sortBy ?? 'terbaru' }}">
+            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nama bahan..." style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; width: 220px;">
+            <button type="submit" class="btn" style="background: #0284c7; padding: 8px 12px; border-radius: 6px; font-size: 13px; border: none; color: white;">🔍 Cari</button>
+            @if(!empty($search))
+                <a href="{{ route('pembelian.stok', ['sort' => $sortBy ?? 'terbaru']) }}" class="btn-secondary" style="padding: 8px 12px; border-radius: 6px; font-size: 13px; text-decoration: none;">Reset</a>
+            @endif
+        </form>
+    </div>
     
     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <span style="color: #64748b; font-size: 14px; font-weight: 600;">Urutkan:</span>
-        <a href="{{ route('pembelian.stok', ['sort' => 'terbaru']) }}" class="btn-secondary" style="{{ ($sortBy ?? 'terbaru') == 'terbaru' ? 'background: #0f7a3a; color: white; border-color: #0f7a3a;' : '' }} padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 6px;">Waktu Masuk</a>
-        <a href="{{ route('pembelian.stok', ['sort' => 'nama']) }}" class="btn-secondary" style="{{ ($sortBy ?? '') == 'nama' ? 'background: #0f7a3a; color: white; border-color: #0f7a3a;' : '' }} padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 6px;">Nama Bahan</a>
-        <a href="{{ route('pembelian.stok', ['sort' => 'kategori']) }}" class="btn-secondary" style="{{ ($sortBy ?? '') == 'kategori' ? 'background: #0f7a3a; color: white; border-color: #0f7a3a;' : '' }} padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 6px;">Kategori</a>
+        <a href="{{ route('pembelian.stok', ['sort' => 'terbaru', 'search' => $search ?? '']) }}" class="btn-secondary" style="{{ ($sortBy ?? 'terbaru') == 'terbaru' ? 'background: #0f7a3a; color: white; border-color: #0f7a3a;' : '' }} padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 6px;">Waktu Masuk</a>
+        <a href="{{ route('pembelian.stok', ['sort' => 'nama', 'search' => $search ?? '']) }}" class="btn-secondary" style="{{ ($sortBy ?? '') == 'nama' ? 'background: #0f7a3a; color: white; border-color: #0f7a3a;' : '' }} padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 6px;">Nama Bahan</a>
+        <a href="{{ route('pembelian.stok', ['sort' => 'kategori', 'search' => $search ?? '']) }}" class="btn-secondary" style="{{ ($sortBy ?? '') == 'kategori' ? 'background: #0f7a3a; color: white; border-color: #0f7a3a;' : '' }} padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 6px;">Kategori</a>
     </div>
 </div>
 
@@ -101,7 +113,11 @@
             @if(collect($data)->where('sisa_distribusi', '>', 0)->count() == 0)
                 <tr>
                     <td colspan="5" style="text-align: center; padding: 30px; color: #6b7280; font-style: italic;">
-                        📁 Semua stok bahan dari pengadaan saat ini sudah habis didistribusikan.
+                        @if(!empty($search))
+                            🔍 Tidak ditemukan stok dengan nama bahan "{{ $search }}"
+                        @else
+                            📁 Semua stok bahan dari pengadaan saat ini sudah habis didistribusikan.
+                        @endif
                     </td>
                 </tr>
             @endif

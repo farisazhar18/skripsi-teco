@@ -72,9 +72,17 @@ class PembelianController extends Controller
             $data = $data->sortByDesc('tanggal_terima');
         }
 
+        // 4. Fitur Search
+        $search = $request->query('search');
+        if (!empty($search)) {
+            $data = $data->filter(function($item) use ($search) {
+                return stripos($item->bahanBaku->nama_bahan, $search) !== false;
+            });
+        }
+
         $data = $data->values(); // Reset urutan index array
 
-        return view('pembelian.index_stok', compact('data', 'sortBy'));
+        return view('pembelian.index_stok', compact('data', 'sortBy', 'search'));
     }
 
     public function create()
