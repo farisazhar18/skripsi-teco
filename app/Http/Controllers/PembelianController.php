@@ -28,7 +28,7 @@ class PembelianController extends Controller
         return view('pembelian.index_pengajuan', compact('data'));
     }
 
-    public function indexStok() 
+    public function indexStok(Request $request) 
     {
         // 1. Ambil semua data pembelian yang disetujui (Urutin dari id terbaru biar data perwakilannya akurat)
         $pembelians = Pembelian::where('status_acc', 'disetujui')
@@ -56,10 +56,26 @@ class PembelianController extends Controller
                 'sisa_distribusi' => $group->sum('sisa_distribusi')
             ];
         })
-        ->sortByDesc('tanggal_terima') // Urutkan berdasarkan yang paling baru diterima masuk gudang
-        ->values(); // Reset urutan index array
+        });
 
-        return view('pembelian.index_stok', compact('data'));
+        // 3. Sorting berdasarkan request user
+        $sortBy = $request->query('sort', 'terbaru'); // Default terbaru
+        
+        if ($sortBy == 'nama') {
+            $data = $data->sortBy(function($item) {
+                return $item->bahanBaku->nama_bahan;
+            });
+        } elseif ($sortBy == 'kategori') {
+            $data = $data->sortBy(function($item) {
+                return ($item->bahanBaku->kategori ?? 'z') . '-' . $item->bahanBaku->nama_bahan;
+            });
+        } else {
+            $data = $data->sortByDesc('tanggal_terima');
+        }
+
+        $data = $data->values(); // Reset urutan index array
+
+        return view('pembelian.index_stok', compact('data', 'sortBy'));
     }
 
     public function create()

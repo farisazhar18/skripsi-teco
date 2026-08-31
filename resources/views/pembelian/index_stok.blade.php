@@ -24,20 +24,28 @@
 <!-- JUDUL TENGAH -->
 <h1 class="page-title">Daftar Pengadaan & Stok Gudang</h1>
 
-<div class="flex flex-wrap gap-md mb-md items-center">
+<div class="flex flex-wrap gap-md mb-md items-center" style="justify-content: space-between;">
     <a href="{{ route('pembelian.stokEvent') }}" class="btn btn-rekap-masuk" style="background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
         🎪 Riwayat Stok dari Event
     </a>
+    
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <span style="color: #64748b; font-size: 14px; font-weight: 600;">Urutkan:</span>
+        <a href="{{ route('pembelian.stok', ['sort' => 'terbaru']) }}" class="btn-secondary" style="{{ ($sortBy ?? 'terbaru') == 'terbaru' ? 'background: #0f7a3a; color: white; border-color: #0f7a3a;' : '' }} padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 6px;">Waktu Masuk</a>
+        <a href="{{ route('pembelian.stok', ['sort' => 'nama']) }}" class="btn-secondary" style="{{ ($sortBy ?? '') == 'nama' ? 'background: #0f7a3a; color: white; border-color: #0f7a3a;' : '' }} padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 6px;">Nama Bahan</a>
+        <a href="{{ route('pembelian.stok', ['sort' => 'kategori']) }}" class="btn-secondary" style="{{ ($sortBy ?? '') == 'kategori' ? 'background: #0f7a3a; color: white; border-color: #0f7a3a;' : '' }} padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 6px;">Kategori</a>
+    </div>
 </div>
 
 <div class="table-card" style="overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 10px;">
     <table style="width: 100%; border-collapse: collapse;">
         <thead>
             <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                <th style="padding: 12px 15px; text-align: center; width: 8%;">No</th>
-                <th style="padding: 12px 15px; text-align: left; width: 50%;">Nama Bahan</th>
+                <th style="padding: 12px 15px; text-align: center; width: 5%;">No</th>
+                <th style="padding: 12px 15px; text-align: left; width: 15%;">Kategori</th>
+                <th style="padding: 12px 15px; text-align: left; width: 35%;">Nama Bahan</th>
                 <th style="padding: 12px 15px; text-align: center; width: 25%;">Sisa Stok Tersedia</th>
-                <th style="padding: 12px 15px; text-align: center; width: 17%;">Aksi</th>
+                <th style="padding: 12px 15px; text-align: center; width: 20%;">Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -48,6 +56,16 @@
                 @if($item->sisa_distribusi > 0)
                 <tr class="row-item">
                     <td style="padding: 12px 15px; text-align: center; color: #475569; vertical-align: middle;">{{ $no++ }}</td>
+                    
+                    <td style="padding: 12px 15px; text-align: left; vertical-align: middle;">
+                        @if(!empty($item->bahanBaku->kategori))
+                            <span style="background: #e2e8f0; color: #475569; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                                {{ $item->bahanBaku->kategori }}
+                            </span>
+                        @else
+                            <span style="color: #94a3b8; font-size: 12px; font-style: italic;">-</span>
+                        @endif
+                    </td>
                     
                     <td style="padding: 12px 15px; text-align: left; vertical-align: middle;">
                         <strong style="color: #1e293b; font-size: 15px; display: block; margin-bottom: 4px;">{{ $item->bahanBaku->nama_bahan ?? '-' }}</strong>
@@ -82,7 +100,7 @@
             <!-- Kalau kebetulan semua stoknya udah 0 (habis) -->
             @if(collect($data)->where('sisa_distribusi', '>', 0)->count() == 0)
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 30px; color: #6b7280; font-style: italic;">
+                    <td colspan="5" style="text-align: center; padding: 30px; color: #6b7280; font-style: italic;">
                         📁 Semua stok bahan dari pengadaan saat ini sudah habis didistribusikan.
                     </td>
                 </tr>
