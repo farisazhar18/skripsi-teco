@@ -383,7 +383,7 @@ class BahanBakuController extends Controller
             $outlet = $request->outlet;
         }
 
-        // 🔥 AMBIL TANGGAL DARI REQUEST, KALAU KOSONG DEFAULT HARI INI
+        //  AMBIL TANGGAL DARI REQUEST, KALAU KOSONG DEFAULT HARI INI
         $tanggal = $request->tanggal ? \Carbon\Carbon::parse($request->tanggal) : \Carbon\Carbon::today();
         
         // Buat nampilin teks dinamis di view (Data Hari Ini vs Data Tanggal: ...)

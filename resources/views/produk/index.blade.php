@@ -26,7 +26,7 @@
 
             <a href="/produk/create" class="btn btn-add">
                 + Tambah Produk
-            </a>
+            </a>    
         @else
             <span class="outlet-badge-inline">
                 Outlet: {{ ucfirst($outletDipilih) }}

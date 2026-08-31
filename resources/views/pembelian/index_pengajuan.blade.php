@@ -82,6 +82,8 @@
                 <td style="padding: 12px 15px; text-align: center; vertical-align: middle;">
                     @if($item->status_acc == 'disetujui') 
                         <span class="badge-modern" style="background: #d1fae5; color: #047857; border: 1px solid #6ee7b7;">✅ Masuk Gudang</span>
+                    @elseif($item->status_acc == 'menunggu_pembelian') 
+                        <span class="badge-modern" style="background: #fef08a; color: #854d0e; border: 1px solid #fde047;">🛒 Menunggu PO</span>
                     @elseif($item->status_acc == 'menunggu_barang') 
                         <span class="badge-modern" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;">🚚 Menunggu Barang</span>
                     @elseif($item->status_acc == 'ditolak') 

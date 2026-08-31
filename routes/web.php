@@ -180,6 +180,8 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
         ->name('pembelian.cetakPO');
     Route::post('/pembelian/{id}/terima', [App\Http\Controllers\PembelianController::class, 'terimaBarang'])
         ->name('pembelian.terimaBarang');
+    Route::post('/pembelian/proses-beli-massal', [App\Http\Controllers\PembelianController::class, 'prosesBeliMassal'])
+        ->name('pembelian.prosesBeliMassal');
 
     Route::get('/pembelian/review-acc', [App\Http\Controllers\PembelianController::class, 'reviewAcc'])
         ->name('pembelian.reviewAcc');

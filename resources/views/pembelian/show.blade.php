@@ -13,6 +13,8 @@
                 <p style="margin: 5px 0 0 0;">
                     @if($pembelian->status_acc == 'disetujui')
                         <span class="badge badge-success" style="background: #e5f5ec; color: #0f7a3a;">✅ Masuk Gudang</span>
+                    @elseif($pembelian->status_acc == 'menunggu_pembelian')
+                        <span class="badge" style="background: #fef08a; color: #854d0e; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">🛒 Menunggu PO</span>
                     @elseif($pembelian->status_acc == 'menunggu_barang')
                         <span class="badge" style="background: #e0f2fe; color: #0284c7; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">🚚 Menunggu Barang</span>
                     @elseif($pembelian->status_acc == 'ditolak')
@@ -41,7 +43,7 @@
             @endif
         </div>
 
-        @php $isMenunggu = !in_array($pembelian->status_acc, ['disetujui', 'menunggu_barang', 'ditolak']); @endphp
+        @php $isMenunggu = !in_array($pembelian->status_acc, ['disetujui', 'menunggu_barang', 'ditolak', 'menunggu_pembelian']); @endphp
 
         @if(in_array(auth()->user()->role, ['owner', 'operational_manager']) && $isMenunggu)
             <div style="background: #f5efe6; padding: 25px; border-radius: 15px; margin-top: 40px; text-align: center; border: 2px dashed #dcd3c6;">

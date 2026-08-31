@@ -4,7 +4,7 @@
 <h1 class="page-title">Pilih Barang untuk Cetak PO</h1>
 
 <div class="card" style="padding: 20px; background: white; border-radius: 20px;">
-    <form action="{{ route('pembelian.cetakPOMulti') }}" method="POST">
+    <form action="{{ route('pembelian.cetakPOMulti') }}" method="POST" target="_blank">
         @csrf
         
         <div style="margin-bottom: 20px;">
@@ -52,15 +52,37 @@
             </table>
             
             <div style="margin-top: 20px;">
-                <a href="{{ route('pembelian.pengajuan') }}" class="btn-secondary">Kembali</a>
-                <button type="submit" class="btn" style="background: #e67e22; margin-left: 10px;">📄 Generate PDF</button>
+                <button type="submit" class="btn" style="background: #e67e22;">📄 Generate PDF</button>
             </div>
         @else
             <div style="padding: 20px; background: #fff4e5; color: #b56a00; border-radius: 10px;">
-                Belum ada pengajuan yang di-ACC (Menunggu Barang).
+                Belum ada pengajuan yang menunggu diproses pembelian.
             </div>
-            <a href="{{ route('pembelian.pengajuan') }}" class="btn-secondary" style="margin-top: 15px; display: inline-block;">Kembali</a>
         @endif
     </form>
+
+    @if($pembelians->count() > 0)
+    <hr style="margin: 30px 0; border: none; border-top: 2px dashed #e2e8f0;">
+
+    <!-- FORM SELESAI (Ubah Status) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h3 style="color: #1e293b; margin: 0 0 5px 0;">Sudah Selesai Mencetak Semua PO?</h3>
+            <p style="color: #64748b; margin: 0; font-size: 14px;">Klik tombol di samping untuk melanjutkan status barang menjadi Menunggu Barang Datang.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ route('pembelian.pengajuan') }}" class="btn-secondary" style="padding: 12px 20px; border-radius: 8px; text-decoration: none;">← Kembali ke Daftar</a>
+            
+            <form action="{{ route('pembelian.prosesBeliMassal') }}" method="POST">
+                @csrf
+                <button class="btn" style="background: #0284c7; padding: 12px 24px; border-radius: 8px; border:none; color:white; cursor:pointer; font-size: 15px;">
+                    🚚 Tandai Semua Sedang Dibeli
+                </button>
+            </form>
+        </div>
+    </div>
+    @else
+    <a href="{{ route('pembelian.pengajuan') }}" class="btn-secondary" style="margin-top: 15px; display: inline-block;">Kembali</a>
+    @endif
 </div>
 @endsection

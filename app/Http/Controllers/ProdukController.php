@@ -42,7 +42,7 @@ class ProdukController extends Controller
         $request->validate([
             'nama_produk' => 'required',
             'kategori' => 'required',
-            'is_event' => 'nullable', // <-- UDAH DIBENERIN
+            'is_event' => 'nullable',
             'harga_reguler' => 'nullable|numeric',
             'harga_large' => 'nullable|numeric',
             'tipe_produk' => 'required',

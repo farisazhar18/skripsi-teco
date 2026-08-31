@@ -14,9 +14,10 @@ class PembelianController extends Controller
             // Logika urutan kustom SQL disamakan persis dengan logika if-else di Blade
             ->orderByRaw("
                 CASE 
-                    WHEN status_acc = 'menunggu_barang' THEN 2 
-                    WHEN status_acc = 'disetujui' THEN 3 
-                    WHEN status_acc = 'ditolak' THEN 4 
+                    WHEN status_acc = 'menunggu_pembelian' THEN 2
+                    WHEN status_acc = 'menunggu_barang' THEN 3 
+                    WHEN status_acc = 'disetujui' THEN 4 
+                    WHEN status_acc = 'ditolak' THEN 5 
                     ELSE 1 -- Tangkap nilai NULL, 'pending', atau kosong, lalu taruh paling atas!
                 END
             ")
@@ -231,7 +232,7 @@ class PembelianController extends Controller
             $pembelian->sisa_distribusi = $pembelian->jumlah_konversi;
         }
         
-        $pembelian->status_acc = ($request->action == 'setujui') ? 'menunggu_barang' : 'ditolak';
+        $pembelian->status_acc = ($request->action == 'setujui') ? 'menunggu_pembelian' : 'ditolak';
         $pembelian->save();
         
         return redirect()->route('pembelian.pengajuan')
@@ -244,7 +245,7 @@ class PembelianController extends Controller
         // Cuma panggil barang yang statusnya Menunggu ACC
         $pengajuans = Pembelian::with('bahanBaku')
             ->whereNull('status_acc')
-            ->orWhereNotIn('status_acc', ['disetujui', 'menunggu_barang', 'ditolak'])
+            ->orWhereNotIn('status_acc', ['disetujui', 'menunggu_barang', 'ditolak', 'menunggu_pembelian'])
             ->orderBy('tanggal', 'desc')
             ->get();
             
@@ -259,13 +260,13 @@ class PembelianController extends Controller
             'action' => 'required|in:setujui,tolak'
         ]);
 
-        $statusBaru = ($request->action == 'setujui') ? 'menunggu_barang' : 'ditolak';
+        $statusBaru = ($request->action == 'setujui') ? 'menunggu_pembelian' : 'ditolak';
         $count = 0;
 
         foreach($request->pembelian_ids as $id) {
             $pembelian = Pembelian::find($id);
             
-            if($pembelian && !in_array($pembelian->status_acc, ['disetujui', 'menunggu_barang', 'ditolak'])) {
+            if($pembelian && !in_array($pembelian->status_acc, ['disetujui', 'menunggu_barang', 'ditolak', 'menunggu_pembelian'])) {
                 
                 // Kalau Qty-nya direvisi sama manager
                 if(isset($request->jumlah[$id]) && $request->jumlah[$id] != $pembelian->jumlah) {
@@ -360,9 +361,9 @@ class PembelianController extends Controller
     // FUNGSI BUAT NAMPILIN HALAMAN PILIH BARANG PO
     public function pilihPO()
     {
-        // Ambil HANYA barang yang statusnya nunggu barang
+        // Ambil HANYA barang yang statusnya nunggu pembelian (sudah ACC Manager)
         $pembelians = Pembelian::with('bahanBaku')
-            ->where('status_acc', 'menunggu_barang')
+            ->where('status_acc', 'menunggu_pembelian')
             ->orderBy('tanggal', 'desc')
             ->get();
             
@@ -397,6 +398,16 @@ class PembelianController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pembelian.pdf_po_multi', compact('pembelians', 'nama_supplier', 'pengadaanKe'));
         
         return $pdf->download('PO_Logistik_' . date('Ymd') . '_' . str_pad($pengadaanKe, 4, '0', STR_PAD_LEFT) . '.pdf');
+    }
+
+    // FUNGSI BARU: LOGISTIK KLIK PROSES BELI MASSAL (Dari Halaman Cetak PO)
+    public function prosesBeliMassal(Request $request)
+    {
+        // Update semua barang yang berstatus menunggu_pembelian menjadi menunggu_barang
+        $count = Pembelian::where('status_acc', 'menunggu_pembelian')
+            ->update(['status_acc' => 'menunggu_barang']);
+
+        return redirect()->route('pembelian.pengajuan')->with('success', "$count barang sedang dipesan! Status berubah menjadi Menunggu Barang Datang.");
     }
 
     // FUNGSI BARU: RIWAYAT STOK MASUK DARI EVENT
