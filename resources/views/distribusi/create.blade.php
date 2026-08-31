@@ -76,27 +76,38 @@
                                     break;
                                 }
                             }
+
+                            $isOutletHabis = $butuh->stok <= 0;
+                            $rowBg = $isOutletHabis ? '#fef2f2' : '#fefce8'; // Merah muda jika habis, kuning muda jika menipis
+                            $statusOutlet = $isOutletHabis ? '🚨 HABIS' : '⚠️ MENIPIS';
+                            $statusColor = $isOutletHabis ? '#dc2626' : '#b45309';
                         @endphp
                         <!-- 🔥 Tambah class "row-kebutuhan" dan data-outlet buat di-filter pakai Javascript -->
-                        <tr class="row-kebutuhan" data-outlet="{{ strtolower($butuh->outlet) }}" data-bahan="{{ $butuh->nama_bahan }}" data-stok="{{ $stokGudang }}" style="border-bottom: 1px solid #e5e7eb; {{ $stokGudang <= 0 ? 'background-color: #fef2f2; opacity: 0.8;' : '' }}">
+                        <tr class="row-kebutuhan" data-outlet="{{ strtolower($butuh->outlet) }}" data-bahan="{{ $butuh->nama_bahan }}" data-stok="{{ $stokGudang }}" style="border-bottom: 1px solid #e5e7eb; background-color: {{ $rowBg }}; {{ $stokGudang <= 0 ? 'opacity: 0.75;' : '' }}">
                             <td style="padding: 12px 10px; text-align: center;">
                                 @if($stokGudang <= 0)
-                                    <span style="font-size: 10px; font-weight: bold; color: #dc2626; border: 1px solid #fca5a5; padding: 2px 4px; border-radius: 4px; background: #fee2e2;">HABIS</span>
+                                    <span style="font-size: 10px; font-weight: bold; color: #6b7280; border: 1px solid #d1d5db; padding: 2px 4px; border-radius: 4px; background: #f3f4f6;">GUDANG KOSONG</span>
                                 @else
                                     <input type="checkbox" class="chk-modal-bahan" style="transform: scale(1.3); cursor: pointer;">
                                 @endif
                             </td>
-                            <td style="padding: 12px 10px; font-weight: bold; color: #92400e;">{{ ucfirst($butuh->outlet) }}</td>
-                            <td style="padding: 12px 10px; color: #1e293b; font-weight: 500;">{{ $butuh->nama_bahan }}</td>
-                            <td style="padding: 12px 10px; text-align: right; font-weight: bold; color: #dc2626;">
-                                +{{ $saranKirim }} {{ $butuh->satuan }}
+                            <td style="padding: 12px 10px; font-weight: bold; color: #92400e;">
+                                {{ ucfirst($butuh->outlet) }}
+                            </td>
+                            <td style="padding: 12px 10px; color: #1e293b; font-weight: 500;">
+                                {{ $butuh->nama_bahan }}<br>
+                                <span style="font-size: 10px; font-weight: bold; color: {{ $statusColor }};">{{ $statusOutlet }}</span>
+                            </td>
+                            <td style="padding: 12px 10px; text-align: right;">
+                                <div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">Stok Outlet: {{ $butuh->stok }}/{{ $butuh->stok_minimum }}</div>
+                                <div style="font-weight: bold; color: #dc2626;">+{{ $saranKirim }} {{ $butuh->satuan }}</div>
                             </td>
                             <td style="padding: 12px 10px; text-align: center; font-weight: bold; color: {{ $stokGudang >= $saranKirim ? '#059669' : '#dc2626' }};">
                                 {{ $stokGudang }} {{ $butuh->satuan }}
                             </td>
                             <td style="padding: 12px 10px; text-align: center;">
                                 @if($stokGudang <= 0)
-                                    <span style="color: #dc2626; font-size: 12px; font-weight: bold;">-</span>
+                                    <span style="color: #6b7280; font-size: 12px; font-weight: bold;">-</span>
                                 @else
                                     <input type="number" class="input-modal-jumlah" value="{{ $saranKirim > $stokGudang ? $stokGudang : $saranKirim }}" min="1" max="{{ $stokGudang }}" style="width: 70px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 5px;">
                                 @endif

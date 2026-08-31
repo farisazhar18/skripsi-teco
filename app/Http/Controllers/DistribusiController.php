@@ -83,6 +83,7 @@ class DistribusiController extends Controller
 
         // 🔥 TAMBAHAN BARU: Ambil stok outlet yang menipis (Stok <= Stok Minimum)
         $kebutuhanOutlet = \App\Models\BahanBaku::whereColumn('stok', '<', 'stok_minimum')
+            ->orderBy('stok', 'asc') // Prioritaskan bahan yang habis duluan (stok 0)
             ->orderBy('outlet')
             ->orderBy('nama_bahan')
             ->get();
