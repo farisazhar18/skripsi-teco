@@ -249,13 +249,15 @@ class EventController extends Controller
             $detailsToPrint = $event->eventDetails; 
         }
         
-        $po_number = 'PO_Event_' . str_replace(' ', '_', $event->nama_event) . '_' . date('YmdHis');
+        // Generate PO number unik per setiap klik Generate PDF
+        $po_number = 'PO-' . date('Ymd-His') . '-' . strtoupper(substr(md5(uniqid()), 0, 4));
         // Tandai bahwa barang-barang event ini sudah dicetak PO-nya
         $idsToUpdate = $detailsToPrint->pluck('id')->toArray();
         if (!empty($idsToUpdate)) {
             \App\Models\EventDetail::whereIn('id', $idsToUpdate)->update([
                 'is_po_dicetak' => true,
-                'po_number' => $po_number
+                'po_number' => $po_number,
+                'nama_supplier' => $nama_supplier != 'SUPPLIER EVENT' ? $nama_supplier : null
             ]);
         }
         

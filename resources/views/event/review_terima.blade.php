@@ -32,10 +32,20 @@
                     <td style="padding: 15px 12px; text-align: center; vertical-align: middle;">
                         <input type="checkbox" name="po_numbers[]" value="{{ $po }}" class="check-item" style="cursor: pointer; transform: scale(1.2);">
                     </td>
-                    <td style="padding: 15px 12px; font-weight: bold; color: #1e293b; vertical-align: middle;">
-                        <span style="background: #f1f5f9; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px;">
-                            {{ $po }}
-                        </span>
+                    <td style="padding: 15px 12px; vertical-align: middle;">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <span style="background: #f1f5f9; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; display: inline-block; width: fit-content;">
+                                {{ $po }}
+                            </span>
+                            @php
+                                $supplier = $items->first()->nama_supplier ?? null;
+                            @endphp
+                            @if($supplier)
+                                <span style="font-size: 13px; color: #059669; font-weight: 600;">
+                                    🏪 {{ $supplier }}
+                                </span>
+                            @endif
+                        </div>
                     </td>
                     <td style="padding: 15px 12px;">
                         <ul style="margin: 0; padding-left: 20px; color: #475569; font-size: 14px;">

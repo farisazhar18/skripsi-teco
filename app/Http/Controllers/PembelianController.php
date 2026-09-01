@@ -423,12 +423,14 @@ class PembelianController extends Controller
 
         $nama_supplier = $request->nama_supplier ?? '.......................................';
 
-        $po_number = 'PO_Logistik_' . date('Ymd') . '_' . str_pad($pengadaanKe, 4, '0', STR_PAD_LEFT);
+        // Generate PO number unik per setiap klik Generate PDF (berdasarkan timestamp)
+        $po_number = 'PO-' . date('Ymd-His') . '-' . strtoupper(substr(md5(uniqid()), 0, 4));
 
-        // Tandai bahwa barang-barang ini sudah dicetak PO-nya dan beri nomor PO
+        // Tandai bahwa barang-barang ini sudah dicetak PO-nya dan beri nomor PO + nama supplier
         Pembelian::whereIn('id', $request->pembelian_ids)->update([
             'is_po_dicetak' => true,
-            'po_number' => $po_number
+            'po_number' => $po_number,
+            'nama_supplier' => $nama_supplier != '.......................................' ? $nama_supplier : null
         ]);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pembelian.pdf_po_multi', compact('pembelians', 'nama_supplier', 'pengadaanKe'));
