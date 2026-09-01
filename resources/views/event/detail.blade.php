@@ -71,12 +71,27 @@
                                 </td>
                                 <td style="padding: 10px; text-align: center;">
                                     <select name="satuan_beli[]" required style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                                        <option value="{{ $detail->bahanBaku->satuan ?? '' }}">{{ $detail->bahanBaku->satuan ?? '' }}</option>
-                                        <option value="Liter">Liter</option>
-                                        <option value="Kg">Kg</option>
-                                        <option value="Pack">Pack</option>
-                                        <option value="Pcs">Pcs</option>
-                                        <option value="Botol">Botol</option>
+                                        @php
+                                            $satuan = strtolower($detail->bahanBaku->satuan ?? '');
+                                            $nama = strtolower($detail->bahanBaku->nama_bahan ?? '');
+                                        @endphp
+                                        
+                                        @if(str_contains($nama, 'soda water'))
+                                            <option value="botol">botol</option>
+                                            <option value="ml">ml</option>
+                                            <option value="liter">liter</option>
+                                        @elseif($satuan == 'ml')
+                                            <option value="ml">ml</option>
+                                            <option value="liter">liter</option>
+                                        @elseif($satuan == 'gram')
+                                            <option value="gram">gram</option>
+                                            <option value="kg">kg</option>
+                                        @elseif($satuan == 'pcs')
+                                            <option value="pcs">pcs</option>
+                                            <option value="pack">pack</option>
+                                        @else
+                                            <option value="{{ $detail->bahanBaku->satuan }}">{{ $detail->bahanBaku->satuan }}</option>
+                                        @endif
                                     </select>
                                 </td>
                             </tr>

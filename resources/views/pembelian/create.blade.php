@@ -52,7 +52,7 @@
                             <select name="bahan_baku_id[]" class="select2-bahan" style="width: 100%;" required>
                                 <option value="">-- Pilih Bahan Baku --</option>
                                 @foreach($bahanBaku as $item)
-                                    <option value="{{ $item->id }}">
+                                    <option value="{{ $item->id }}" data-satuan="{{ strtolower($item->satuan) }}" data-nama="{{ strtolower($item->nama_bahan) }}">
                                         {{ $item->nama_bahan }} (Stok: {{ $item->satuan }})
                                     </option>
                                 @endforeach
@@ -62,15 +62,8 @@
                             <input type="number" name="jumlah[]" min="1" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; text-align: center;">
                         </td>
                         <td style="padding: 12px 15px;">
-                            <select name="satuan_beli[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
-                                <option value="">-- Satuan --</option>
-                                <option value="ml">ml</option>
-                                <option value="liter">liter</option>
-                                <option value="gram">gram</option>
-                                <option value="kg">kg</option>
-                                <option value="pcs">pcs</option>
-                                <option value="botol">botol</option>
-                                <option value="pack">pack</option>
+                            <select name="satuan_beli[]" class="satuan-beli" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                                <option value="">-- Pilih Bahan Baku Dulu --</option>
                             </select>
                         </td>
                         <td style="padding: 12px 15px;">
@@ -127,7 +120,7 @@
                         <select name="bahan_baku_id[]" class="select2-bahan" style="width: 100%;" required>
                             <option value="">-- Pilih Bahan Baku --</option>
                             @foreach($bahanBaku as $item)
-                                <option value="{{ $item->id }}">
+                                <option value="{{ $item->id }}" data-satuan="{{ strtolower($item->satuan) }}" data-nama="{{ strtolower($item->nama_bahan) }}">
                                     {{ $item->nama_bahan }} (Stok: {{ $item->satuan }})
                                 </option>
                             @endforeach
@@ -137,15 +130,8 @@
                         <input type="number" name="jumlah[]" min="1" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; text-align: center;">
                     </td>
                     <td style="padding: 12px 15px;">
-                        <select name="satuan_beli[]" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
-                            <option value="">-- Satuan --</option>
-                            <option value="ml">ml</option>
-                            <option value="liter">liter</option>
-                            <option value="gram">gram</option>
-                            <option value="kg">kg</option>
-                            <option value="pcs">pcs</option>
-                            <option value="botol">botol</option>
-                            <option value="pack">pack</option>
+                        <select name="satuan_beli[]" class="satuan-beli" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                            <option value="">-- Pilih Bahan Baku Dulu --</option>
                         </select>
                     </td>
                     <td style="padding: 12px 15px;">
@@ -170,6 +156,41 @@
                 alert('Minimal harus ada 1 pengajuan bahan baku!');
             }
         });
+
+        // Event Listener untuk update satuan beli
+        $(document).on('change', '.select2-bahan', function() {
+            var selectedOption = $(this).find(':selected');
+            var satuan = selectedOption.data('satuan');
+            var nama = selectedOption.data('nama');
+            var satuanBeliSelect = $(this).closest('tr').find('.satuan-beli');
+            
+            satuanBeliSelect.empty();
+            
+            if (!satuan) {
+                satuanBeliSelect.append('<option value="">-- Pilih Bahan Baku Dulu --</option>');
+                return;
+            }
+
+            satuanBeliSelect.append('<option value="">-- Satuan --</option>');
+
+            if (nama && nama.includes('soda water')) {
+                satuanBeliSelect.append('<option value="botol">botol</option>');
+                satuanBeliSelect.append('<option value="ml">ml</option>');
+                satuanBeliSelect.append('<option value="liter">liter</option>');
+            } else if (satuan === 'ml') {
+                satuanBeliSelect.append('<option value="ml">ml</option>');
+                satuanBeliSelect.append('<option value="liter">liter</option>');
+            } else if (satuan === 'gram') {
+                satuanBeliSelect.append('<option value="gram">gram</option>');
+                satuanBeliSelect.append('<option value="kg">kg</option>');
+            } else if (satuan === 'pcs') {
+                satuanBeliSelect.append('<option value="pcs">pcs</option>');
+                satuanBeliSelect.append('<option value="pack">pack</option>');
+            } else {
+                satuanBeliSelect.append('<option value="' + satuan + '">' + satuan + '</option>');
+            }
+        });
+
     });
 </script>
 
