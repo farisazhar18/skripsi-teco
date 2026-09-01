@@ -19,6 +19,139 @@
 
 <div class="form-card">
 
+    <!-- 🔥 TOMBOL TRIGGER MODAL CEK STOK GUDANG -->
+    @if(isset($stokGudang) && $stokGudang->count() > 0)
+    <div style="margin-bottom: 25px;">
+        <button type="button" onclick="document.getElementById('modalStokGudang').style.display='flex'" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: inline-flex; align-items: center; gap: 8px; font-size: 15px; transition: 0.2s;">
+            📦 Cek Stok Gudang
+            @php
+                $habisCount = $stokGudang->where('stok', '<=', 0)->count();
+                $menipisCount = $stokGudang->filter(function($b){ return $b->stok > 0 && $b->stok <= $b->stok_minimum; })->count();
+            @endphp
+            @if($habisCount > 0)
+                <span style="background: #dc2626; color: white; padding: 2px 8px; border-radius: 50px; font-size: 12px;">{{ $habisCount }} Habis</span>
+            @endif
+            @if($menipisCount > 0)
+                <span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 50px; font-size: 12px;">{{ $menipisCount }} Menipis</span>
+            @endif
+        </button>
+    </div>
+
+    <!-- 🔥 MODAL POPUP CEK STOK GUDANG -->
+    <div id="modalStokGudang" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+        <div style="background-color: #fff; width: 90%; max-width: 800px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 85vh;">
+            
+            <!-- HEADER MODAL & FILTER -->
+            <div style="background-color: #eff6ff; padding: 20px; border-bottom: 1px solid #bfdbfe; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1;">
+                    <h3 style="color: #1d4ed8; margin: 0 0 8px 0; font-size: 18px;">📦 Stok Bahan Baku Gudang</h3>
+                    <p style="color: #1e40af; font-size: 14px; margin: 0;">Cek bahan baku yang perlu diajukan pengadaan. Bahan yang habis dan menipis ditampilkan di atas.</p>
+                </div>
+                
+                <!-- DROPDOWN FILTER -->
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <select id="filterStatusStok" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #bfdbfe; outline: none; background: white; color: #1d4ed8; font-weight: bold; cursor: pointer;">
+                        <option value="all">Semua Status</option>
+                        <option value="habis">🚨 Habis</option>
+                        <option value="menipis">⚠️ Menipis</option>
+                        <option value="aman">✅ Aman</option>
+                    </select>
+                    
+                    <select id="filterKategoriStok" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #bfdbfe; outline: none; background: white; color: #1d4ed8; font-weight: bold; cursor: pointer;">
+                        <option value="all">Semua Kategori</option>
+                        @php $kategoris = $stokGudang->pluck('kategori')->unique()->filter()->sort(); @endphp
+                        @foreach($kategoris as $kat)
+                            <option value="{{ strtolower($kat) }}">{{ ucfirst($kat) }}</option>
+                        @endforeach
+                    </select>
+                    
+                    <button type="button" onclick="document.getElementById('modalStokGudang').style.display='none'" style="background: none; border: none; font-size: 28px; color: #1d4ed8; cursor: pointer; line-height: 1; padding: 0; margin-left: 10px;">&times;</button>
+                </div>
+            </div>
+
+            <!-- SEARCH BOX -->
+            <div style="padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <input type="text" id="searchStokGudang" placeholder="🔍 Cari nama bahan baku..." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px;">
+            </div>
+
+            <!-- ISI MODAL (TABEL SCROLLABLE) -->
+            <div style="overflow-y: auto; padding: 0 20px 20px 20px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead style="position: sticky; top: 0; background-color: #fff; z-index: 1;">
+                        <tr style="border-bottom: 2px solid #bfdbfe; color: #1d4ed8;">
+                            <th style="padding: 15px 10px; text-align: left;">Bahan Baku</th>
+                            <th style="padding: 15px 10px; text-align: center;">Kategori</th>
+                            <th style="padding: 15px 10px; text-align: center;">Stok Sekarang</th>
+                            <th style="padding: 15px 10px; text-align: center;">Stok Minimum</th>
+                            <th style="padding: 15px 10px; text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($stokGudang as $bahan)
+                        @php
+                            $isHabis = $bahan->stok <= 0;
+                            $isMenipis = !$isHabis && $bahan->stok <= $bahan->stok_minimum;
+                            $isAman = !$isHabis && !$isMenipis;
+                            
+                            if ($isHabis) {
+                                $rowBg = '#fef2f2';
+                                $statusLabel = '🚨 HABIS';
+                                $statusColor = '#dc2626';
+                                $statusKey = 'habis';
+                            } elseif ($isMenipis) {
+                                $rowBg = '#fffbeb';
+                                $statusLabel = '⚠️ MENIPIS';
+                                $statusColor = '#d97706';
+                                $statusKey = 'menipis';
+                            } else {
+                                $rowBg = '#f0fdf4';
+                                $statusLabel = '✅ Aman';
+                                $statusColor = '#16a34a';
+                                $statusKey = 'aman';
+                            }
+                        @endphp
+                        <tr class="row-stok-gudang" data-status="{{ $statusKey }}" data-kategori="{{ strtolower($bahan->kategori ?? '') }}" data-nama="{{ strtolower($bahan->nama_bahan) }}" style="border-bottom: 1px solid #e5e7eb; background-color: {{ $rowBg }};">
+                            <td style="padding: 12px 10px; font-weight: 600; color: #1e293b;">
+                                {{ $bahan->nama_bahan }}
+                            </td>
+                            <td style="padding: 12px 10px; text-align: center; color: #64748b; font-size: 13px;">
+                                {{ ucfirst($bahan->kategori ?? '-') }}
+                            </td>
+                            <td style="padding: 12px 10px; text-align: center; font-weight: bold; color: {{ $isHabis ? '#dc2626' : ($isMenipis ? '#d97706' : '#16a34a') }};">
+                                {{ $bahan->stok }} {{ $bahan->satuan }}
+                            </td>
+                            <td style="padding: 12px 10px; text-align: center; color: #64748b;">
+                                {{ $bahan->stok_minimum }} {{ $bahan->satuan }}
+                            </td>
+                            <td style="padding: 12px 10px; text-align: center;">
+                                <span style="font-size: 12px; font-weight: bold; color: {{ $statusColor }}; padding: 3px 8px; border-radius: 50px; background: {{ $isHabis ? '#fee2e2' : ($isMenipis ? '#fef3c7' : '#dcfce7') }};">
+                                    {{ $statusLabel }}
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="padding: 15px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; background-color: #f8fafc;">
+                <button type="button" onclick="document.getElementById('modalStokGudang').style.display='none'" style="background-color: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT KLIK DI LUAR MODAL KETUTUP -->
+    <script>
+        window.addEventListener('click', function(event) {
+            var modal = document.getElementById('modalStokGudang');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        });
+    </script>
+    @endif
+    <!-- 🔥 AKHIR MODAL CEK STOK GUDANG -->
+
 <form action="/pembelian" method="POST">
     @csrf
 
@@ -189,6 +322,32 @@
                 satuanBeliSelect.append('<option value="' + satuan + '">' + satuan + '</option>');
             }
         });
+
+        // 🔥 FILTER & SEARCH STOK GUDANG MODAL
+        function filterStokGudang() {
+            var status = $('#filterStatusStok').val();
+            var kategori = $('#filterKategoriStok').val();
+            var search = $('#searchStokGudang').val().toLowerCase();
+
+            $('.row-stok-gudang').each(function() {
+                var rowStatus = $(this).data('status');
+                var rowKategori = $(this).data('kategori');
+                var rowNama = $(this).data('nama');
+
+                var matchStatus = (status === 'all' || rowStatus === status);
+                var matchKategori = (kategori === 'all' || rowKategori === kategori);
+                var matchSearch = (search === '' || rowNama.includes(search));
+
+                if (matchStatus && matchKategori && matchSearch) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        $('#filterStatusStok, #filterKategoriStok').change(filterStokGudang);
+        $('#searchStokGudang').on('input', filterStokGudang);
 
     });
 </script>

@@ -92,7 +92,14 @@ class PembelianController extends Controller
             ->orderBy('nama_bahan')
             ->get();
 
-        return view('pembelian.create', compact('bahanBaku'));
+        // Data stok gudang untuk modal cek stok
+        $stokGudang = BahanBaku::where('outlet', 'gudang')
+            ->orderByRaw('CASE WHEN stok <= 0 THEN 0 WHEN stok <= stok_minimum THEN 1 ELSE 2 END ASC')
+            ->orderBy('kategori')
+            ->orderBy('nama_bahan')
+            ->get();
+
+        return view('pembelian.create', compact('bahanBaku', 'stokGudang'));
     }
 
     public function store(Request $request)
