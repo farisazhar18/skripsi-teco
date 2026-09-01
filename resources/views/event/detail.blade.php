@@ -88,7 +88,6 @@
                                             <option value="kg">kg</option>
                                         @elseif($satuan == 'pcs')
                                             <option value="pcs">pcs</option>
-                                            <option value="pack">pack</option>
                                         @else
                                             <option value="{{ $detail->bahanBaku->satuan }}">{{ $detail->bahanBaku->satuan }}</option>
                                         @endif

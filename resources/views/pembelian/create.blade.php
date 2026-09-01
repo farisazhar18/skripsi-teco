@@ -185,7 +185,6 @@
                 satuanBeliSelect.append('<option value="kg">kg</option>');
             } else if (satuan === 'pcs') {
                 satuanBeliSelect.append('<option value="pcs">pcs</option>');
-                satuanBeliSelect.append('<option value="pack">pack</option>');
             } else {
                 satuanBeliSelect.append('<option value="' + satuan + '">' + satuan + '</option>');
             }
