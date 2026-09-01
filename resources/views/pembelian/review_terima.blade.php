@@ -3,7 +3,7 @@
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <div>
-        <h1 class="page-title" style="margin: 0;">Terima Barang Massal</h1>
+        <h1 class="page-title" style="margin: 0;">Terima Barang Bahan Baku</h1>
         <p style="color: #64748b; margin-top: 5px;">Centang barang yang sudah benar-benar sampai di gudang.</p>
     </div>
     <a href="{{ route('pembelian.pengajuan') }}" class="btn-secondary" style="height: 42px; display: flex; align-items: center; border-radius: 6px;">
@@ -21,7 +21,7 @@
                     <th style="padding: 12px; text-align: center; width: 5%;">
                         <input type="checkbox" id="checkAll" style="cursor: pointer; transform: scale(1.2);">
                     </th>
-                    <th style="padding: 12px; text-align: left; width: 25%;">Nomor PO / Batch</th>
+                    <th style="padding: 12px; text-align: left; width: 25%;">Nama Toko / Supplier</th>
                     <th style="padding: 12px; text-align: left; width: 50%;">Daftar Barang</th>
                     <th style="padding: 12px; text-align: center; width: 20%;">Aksi</th>
                 </tr>
@@ -34,17 +34,16 @@
                     </td>
                     <td style="padding: 15px 12px; vertical-align: middle;">
                         <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <span style="background: #f1f5f9; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; display: inline-block; width: fit-content;">
-                                {{ $po }}
-                            </span>
                             @php
                                 $supplier = $items->first()->nama_supplier ?? null;
                             @endphp
-                            @if($supplier)
-                                <span style="font-size: 13px; color: #059669; font-weight: 600;">
+                            <span style="font-size: 14px; font-weight: bold; color: #1e293b;">
+                                @if($supplier && $supplier !== '.......................................' && $supplier !== 'SUPPLIER EVENT')
                                     🏪 {{ $supplier }}
-                                </span>
-                            @endif
+                                @else
+                                    🏪 Tanpa Nama Toko
+                                @endif
+                            </span>
                         </div>
                     </td>
                     <td style="padding: 15px 12px;">

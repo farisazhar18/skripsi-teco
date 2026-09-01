@@ -3,7 +3,7 @@
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <div>
-        <h1 class="page-title" style="margin: 0;">Persetujuan Pengajuan (ACC Massal)</h1>
+        <h1 class="page-title" style="margin: 0;">Persetujuan Pengajuan</h1>
         <p style="color: #64748b; margin-top: 5px;">Review, revisi jumlah (jika perlu), lalu centang data untuk disetujui atau ditolak.</p>
     </div>
     <a href="{{ route('pembelian.pengajuan') }}" class="btn-secondary" style="height: 42px; display: flex; align-items: center; border-radius: 6px;">
