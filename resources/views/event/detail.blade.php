@@ -184,10 +184,9 @@
                 </a>
             
             @elseif($event->status == 'menunggu_barang_event')
-                <form action="{{ route('event.terima', $event->id) }}" method="POST">
-                    @csrf
-                    <button class="btn" style="background: #0284c7; padding: 10px 20px; border-radius: 8px;">📦 Terima Barang Event</button>
-                </form>
+                <a href="{{ route('event.reviewTerima', $event->id) }}" class="btn" style="background: #0284c7; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
+                    📦 Terima Barang Event
+                </a>
             @elseif($event->status == 'bahan_ready')
                 <form action="{{ route('event.serahkan', $event->id) }}" method="POST">
                     @csrf

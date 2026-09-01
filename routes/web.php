@@ -310,8 +310,10 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
             ->name('event.tugas')
             ->middleware('role:owner,logistik,barista,operational_manager');
 
-        Route::post('/{id}/terima', [App\Http\Controllers\EventController::class, 'terimaBarang'])
-            ->name('event.terima')->middleware('role:logistik,owner');
+        Route::get('/{id}/review-terima', [App\Http\Controllers\EventController::class, 'reviewTerima'])
+            ->name('event.reviewTerima')->middleware('role:logistik,owner');
+        Route::post('/{id}/terima-massal', [App\Http\Controllers\EventController::class, 'terimaMassal'])
+            ->name('event.terimaMassal')->middleware('role:logistik,owner');
 
         Route::get('/{id}/form-po', [App\Http\Controllers\EventController::class, 'formPO'])
             ->name('event.formPO')->middleware('role:logistik,owner');

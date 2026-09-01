@@ -3,15 +3,15 @@
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <div>
-        <h1 class="page-title" style="margin: 0;">Terima Barang Massal</h1>
-        <p style="color: #64748b; margin-top: 5px;">Centang barang yang sudah benar-benar sampai di gudang.</p>
+        <h1 class="page-title" style="margin: 0;">Terima Barang Event: {{ $event->nama_event }}</h1>
+        <p style="color: #64748b; margin-top: 5px;">Centang PO / Barang yang sudah benar-benar sampai.</p>
     </div>
-    <a href="{{ route('pembelian.pengajuan') }}" class="btn-secondary" style="height: 42px; display: flex; align-items: center; border-radius: 6px;">
+    <a href="{{ route('event.detail', $event->id) }}" class="btn-secondary" style="height: 42px; display: flex; align-items: center; border-radius: 6px;">
         ← Kembali
     </a>
 </div>
 
-<form action="{{ route('pembelian.terimaMassal') }}" method="POST" id="form-terima-massal">
+<form action="{{ route('event.terimaMassal', $event->id) }}" method="POST" id="form-terima-massal">
     @csrf
 
     <div class="table-card" style="overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 10px;">
@@ -27,7 +27,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($groupedPengajuans as $po => $items)
+                @forelse($groupedDetails as $po => $items)
                 <tr style="border-bottom: 1px solid #e5e7eb;">
                     <td style="padding: 15px 12px; text-align: center; vertical-align: middle;">
                         <input type="checkbox" name="po_numbers[]" value="{{ $po }}" class="check-item" style="cursor: pointer; transform: scale(1.2);">
@@ -42,7 +42,7 @@
                             @foreach($items as $item)
                                 <li>
                                     <strong>{{ $item->bahanBaku->nama_bahan ?? '-' }}</strong> - 
-                                    <span style="color: #0284c7; font-weight: bold;">{{ $item->jumlah }} {{ $item->satuan_beli }}</span>
+                                    <span style="color: #0284c7; font-weight: bold;">{{ $item->jumlah_beli }} {{ $item->satuan_beli }}</span>
                                 </li>
                             @endforeach
                         </ul>
@@ -56,7 +56,7 @@
                 @empty
                 <tr>
                     <td colspan="4" style="text-align: center; padding: 40px; color: #64748b;">
-                        📦 Tidak ada pengadaan barang yang sedang ditunggu.
+                        📦 Tidak ada barang yang menunggu diterima.
                     </td>
                 </tr>
                 @endforelse
@@ -64,7 +64,7 @@
         </table>
     </div>
 
-    @if($groupedPengajuans->count() > 0)
+    @if($groupedDetails->count() > 0)
     <div style="margin-top: 20px; display: flex; justify-content: flex-end; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
         <button type="button" onclick="konfirmasiTerimaMassal()" class="btn" style="background: #0284c7; padding: 12px 24px; border-radius: 8px; font-size: 15px;">
             📦 Terima PO Terpilih
@@ -85,18 +85,18 @@
     function konfirmasiTerimaMassal() {
         let selected = document.querySelectorAll('.check-item:checked');
         if(selected.length === 0) {
-            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Pilih minimal satu barang yang sudah sampai!' });
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Pilih minimal satu batch PO yang sudah sampai!' });
             return;
         }
 
         Swal.fire({
             title: 'Terima Barang?',
-            text: "Barang yang dicentang akan ditambahkan ke stok gudang.",
+            text: "Barang pada PO yang dicentang akan ditambahkan ke stok event.",
             icon: 'info',
             showCancelButton: true,
             confirmButtonColor: '#0284c7',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Ya, Masukkan Gudang!',
+            confirmButtonText: 'Ya, Terima!',
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {

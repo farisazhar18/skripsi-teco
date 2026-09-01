@@ -249,10 +249,14 @@ class EventController extends Controller
             $detailsToPrint = $event->eventDetails; 
         }
         
+        $po_number = 'PO_Event_' . str_replace(' ', '_', $event->nama_event) . '_' . date('YmdHis');
         // Tandai bahwa barang-barang event ini sudah dicetak PO-nya
         $idsToUpdate = $detailsToPrint->pluck('id')->toArray();
         if (!empty($idsToUpdate)) {
-            \App\Models\EventDetail::whereIn('id', $idsToUpdate)->update(['is_po_dicetak' => true]);
+            \App\Models\EventDetail::whereIn('id', $idsToUpdate)->update([
+                'is_po_dicetak' => true,
+                'po_number' => $po_number
+            ]);
         }
         
         $pdf = \PDF::loadView('event.po_event', compact('event', 'nama_supplier', 'detailsToPrint'));
@@ -266,23 +270,65 @@ class EventController extends Controller
         return redirect()->route('event.tugas')->with('success', 'Barang sedang dipesan! Status berubah menjadi Menunggu Barang Datang.');
     }
 
-    // 3. LOGISTIK TERIMA BARANG
-    public function terimaBarang($id)
+    // 3. LOGISTIK TERIMA BARANG (PILIH PO)
+    public function reviewTerima($id)
     {
         $event = Event::with('eventDetails.bahanBaku')->findOrFail($id);
+        
+        if ($event->status != 'menunggu_barang_event') {
+            return redirect()->route('event.tugas')->withErrors(['Status event belum bisa diterima barangnya.']);
+        }
 
-        foreach ($event->eventDetails as $detail) {
-            $bahanBaku = BahanBaku::find($detail->bahan_baku_id);
-            if ($bahanBaku) {
-                $stokEvent = (float)($bahanBaku->stok_event ?? 0);
-                $butuh = (float)($detail->jumlah_dibutuhkan ?? 0);
-                $bahanBaku->stok_event = $stokEvent + $butuh;
-                $bahanBaku->save();
+        // Cuma panggil barang yang belum diterima
+        $details = $event->eventDetails->where('is_diterima', false);
+
+        // Kelompokkan berdasarkan PO Number
+        $groupedDetails = $details->groupBy(function ($item) {
+            return $item->po_number ?: 'Tanpa PO / Manual';
+        });
+
+        return view('event.review_terima', compact('event', 'groupedDetails'));
+    }
+
+    public function terimaMassal(Request $request, $id)
+    {
+        $request->validate([
+            'po_numbers' => 'required|array'
+        ]);
+
+        $event = Event::with('eventDetails')->findOrFail($id);
+
+        foreach($request->po_numbers as $po) {
+            if ($po == 'Tanpa PO / Manual') {
+                $details = $event->eventDetails->where('is_diterima', false)->whereNull('po_number');
+            } else {
+                $details = $event->eventDetails->where('is_diterima', false)->where('po_number', $po);
+            }
+
+            foreach($details as $detail) {
+                // Tambah stok_event
+                $bahanBaku = \App\Models\BahanBaku::find($detail->bahan_baku_id);
+                if ($bahanBaku) {
+                    $stokEvent = (float)($bahanBaku->stok_event ?? 0);
+                    $butuh = (float)($detail->jumlah_dibutuhkan ?? 0);
+                    $bahanBaku->stok_event = $stokEvent + $butuh;
+                    $bahanBaku->save();
+                }
+
+                $detail->is_diterima = true;
+                $detail->save();
             }
         }
 
-        $event->update(['status' => 'bahan_ready']);
-        return redirect()->route('event.tugas')->with('success', 'Barang diterima! Bahan baku untuk event siap digunakan.');
+        // Cek apakah semua detail sudah diterima
+        $semuaDiterima = $event->eventDetails()->where('is_diterima', false)->count() == 0;
+        
+        if ($semuaDiterima) {
+            $event->update(['status' => 'bahan_ready']);
+            return redirect()->route('event.tugas')->with('success', 'Semua barang diterima! Bahan baku untuk event siap digunakan.');
+        }
+
+        return redirect()->route('event.tugas')->with('success', 'Sebagian barang berhasil diterima! Menunggu sisa barang lainnya.');
     }
 
     // 4. LOGISTIK SERAHKAN KE BARISTA

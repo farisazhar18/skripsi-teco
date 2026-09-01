@@ -40,13 +40,13 @@
                                     <input type="checkbox" name="detail_ids[]" value="{{ $detail->id }}" style="transform: scale(1.5); cursor: pointer;">
                                 @endif
                             </td>
-                            <td style="padding: 12px; font-weight: 600; font-size: 15px; {{ $detail->is_po_dicetak ? 'text-decoration: line-through; color: #9ca3af;' : '' }}">
+                            <td style="padding: 12px; font-weight: 600; font-size: 15px; {{ $detail->is_po_dicetak ? 'color: #9ca3af;' : '' }}">
                                 {{ $detail->bahanBaku->nama_bahan ?? '-' }}
                                 @if($detail->is_po_dicetak)
                                     <span style="font-size: 11px; font-weight: bold; color: #059669; margin-left: 10px;">✅ PO Sudah Dicetak</span>
                                 @endif
                             </td>
-                            <td style="padding: 12px; text-align: center; color: #047857; font-weight: bold; font-size: 15px; {{ $detail->is_po_dicetak ? 'text-decoration: line-through; color: #9ca3af;' : '' }}">
+                            <td style="padding: 12px; text-align: center; color: #047857; font-weight: bold; font-size: 15px; {{ $detail->is_po_dicetak ? 'color: #9ca3af;' : '' }}">
                                 {{ $detail->jumlah_beli }} {{ $detail->satuan_beli }}
                             </td>
                         </tr>
