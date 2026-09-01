@@ -319,22 +319,30 @@ class PembelianController extends Controller
             ->orderBy('tanggal', 'asc') // Yang paling lama dipesan taruh atas
             ->get();
             
-        return view('pembelian.review_terima', compact('pengajuans'));
+        // Kelompokkan berdasarkan PO Number
+        $groupedPengajuans = $pengajuans->groupBy(function ($item) {
+            return $item->po_number ?: 'Tanpa PO / Manual';
+        });
+
+        return view('pembelian.review_terima', compact('groupedPengajuans'));
     }
 
     // FUNGSI EKSEKUSI TERIMA BARANG MASSAL
     public function terimaMassal(Request $request)
     {
         $request->validate([
-            'pembelian_ids' => 'required|array' // Pastiin ada yang dicentang
+            'po_numbers' => 'required|array'
         ]);
 
         $count = 0;
-        foreach($request->pembelian_ids as $id) {
-            $pembelian = Pembelian::find($id);
-            
-            // Cek biar aman, cuma yang nunggu barang yang bisa diterima
-            if($pembelian && $pembelian->status_acc == 'menunggu_barang') {
+        foreach($request->po_numbers as $po) {
+            if ($po == 'Tanpa PO / Manual') {
+                $pembelians = Pembelian::where('status_acc', 'menunggu_barang')->whereNull('po_number')->get();
+            } else {
+                $pembelians = Pembelian::where('status_acc', 'menunggu_barang')->where('po_number', $po)->get();
+            }
+
+            foreach($pembelians as $pembelian) {
                 $pembelian->status_acc = 'disetujui'; // Otomatis masuk gudang
                 $pembelian->save();
                 $count++;
@@ -413,10 +421,15 @@ class PembelianController extends Controller
             ->get()
             ->count();
 
-        // Tandai bahwa barang-barang ini sudah dicetak PO-nya
-        Pembelian::whereIn('id', $request->pembelian_ids)->update(['is_po_dicetak' => true]);
-
         $nama_supplier = $request->nama_supplier ?? '.......................................';
+
+        $po_number = 'PO_Logistik_' . date('Ymd') . '_' . str_pad($pengadaanKe, 4, '0', STR_PAD_LEFT);
+
+        // Tandai bahwa barang-barang ini sudah dicetak PO-nya dan beri nomor PO
+        Pembelian::whereIn('id', $request->pembelian_ids)->update([
+            'is_po_dicetak' => true,
+            'po_number' => $po_number
+        ]);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pembelian.pdf_po_multi', compact('pembelians', 'nama_supplier', 'pengadaanKe'));
         
