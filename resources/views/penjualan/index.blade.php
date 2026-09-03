@@ -104,6 +104,7 @@
         </div>
         
         <p class="order-meta">
+            Jam Pesan: <strong style="color: #475569;">{{ \Carbon\Carbon::parse($p->created_at)->format('H:i') }}</strong> <br>
             Metode: <strong class="order-meta-method">{{ strtoupper($p->metode_pembayaran) }}</strong> <br>
             <strong class="order-meta-total">
                 Total: Rp {{ number_format($p->total_harga, 0, ',', '.') }}

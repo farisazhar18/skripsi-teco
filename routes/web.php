@@ -329,6 +329,8 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
             ->name('event.formPO')->middleware('role:logistik,owner');
         Route::get('/{id}/cetak-po', [App\Http\Controllers\EventController::class, 'cetakPO'])
             ->name('event.cetakPO')->middleware('role:logistik,owner,operational_manager');
+        Route::post('/{id}/batal-po', [App\Http\Controllers\EventController::class, 'batalPO'])
+            ->name('event.batalPO')->middleware('role:logistik,owner');
         Route::post('/{id}/proses-beli', [App\Http\Controllers\EventController::class, 'prosesBeli'])
             ->name('event.prosesBeli')->middleware('role:logistik,owner');
 

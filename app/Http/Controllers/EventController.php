@@ -249,8 +249,22 @@ class EventController extends Controller
             $detailsToPrint = $event->eventDetails; 
         }
         
-        // Generate PO number unik per setiap klik Generate PDF
-        $po_number = 'PO-' . date('Ymd-His') . '-' . strtoupper(substr(md5(uniqid()), 0, 4));
+        // Generate PO number unik per setiap klik Generate PDF (Berdasarkan kodifikasi PO-EVT-YYYYMMDD-XXXX)
+        $lastPo = \App\Models\EventDetail::whereDate('updated_at', date('Y-m-d'))
+            ->whereNotNull('po_number')
+            ->orderBy('po_number', 'desc')
+            ->value('po_number');
+
+        if ($lastPo) {
+            // Ambil 4 angka terakhir dan tambah 1
+            $lastNumber = (int) substr($lastPo, -4);
+            $pengadaanKe = $lastNumber + 1;
+        } else {
+            $pengadaanKe = 1;
+        }
+
+        $po_number = 'PO-EVT-' . date('Ymd') . '-' . str_pad($pengadaanKe, 4, '0', STR_PAD_LEFT);
+        
         // Tandai bahwa barang-barang event ini sudah dicetak PO-nya
         $idsToUpdate = $detailsToPrint->pluck('id')->toArray();
         if (!empty($idsToUpdate)) {
@@ -262,7 +276,21 @@ class EventController extends Controller
         }
         
         $pdf = \PDF::loadView('event.po_event', compact('event', 'nama_supplier', 'detailsToPrint'));
-        return $pdf->download('PO_Event_' . str_replace(' ', '_', $event->nama_event) . '.pdf');
+        return $pdf->download('PO_Event_' . str_replace(' ', '_', $event->nama_event) . '_' . date('Ymd') . '_' . str_pad($pengadaanKe, 4, '0', STR_PAD_LEFT) . '.pdf');
+    }
+
+    // FUNGSI BARU: BATAL CETAK PO / EDIT ULANG UNTUK EVENT
+    public function batalPO($id)
+    {
+        $detail = \App\Models\EventDetail::findOrFail($id);
+        
+        $detail->update([
+            'is_po_dicetak' => false,
+            'po_number' => null,
+            'nama_supplier' => null
+        ]);
+
+        return back()->with('success', 'Berhasil membatalkan cetak PO Event! Barang telah dikembalikan ke daftar belum dicetak.');
     }
 
     public function prosesBeli($id)

@@ -486,11 +486,16 @@ class PembelianController extends Controller
     // FUNGSI BARU: LOGISTIK KLIK PROSES BELI MASSAL (Dari Halaman Cetak PO)
     public function prosesBeliMassal(Request $request)
     {
-        // Update semua barang yang berstatus menunggu_pembelian menjadi menunggu_barang
+        // Update HANYA barang yang berstatus menunggu_pembelian DAN SUDAH DICETAK PO-NYA (Langkah 2)
         $count = Pembelian::where('status_acc', 'menunggu_pembelian')
+            ->where('is_po_dicetak', true)
             ->update(['status_acc' => 'menunggu_barang']);
 
-        return redirect()->route('pembelian.pengajuan')->with('success', "$count barang sedang dipesan! Status berubah menjadi Menunggu Barang Datang.");
+        if ($count > 0) {
+            return redirect()->route('pembelian.pengajuan')->with('success', "$count barang (dari Riwayat PO) sedang dipesan! Status berubah menjadi Menunggu Barang Datang.");
+        } else {
+            return redirect()->route('pembelian.pengajuan')->withErrors(['Tidak ada barang di Riwayat PO yang bisa diproses.']);
+        }
     }
 
     // FUNGSI BARU: RIWAYAT STOK MASUK DARI EVENT

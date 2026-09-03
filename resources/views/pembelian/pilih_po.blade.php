@@ -64,8 +64,8 @@
         <table class="table" style="width: 100%; text-align: left; border-collapse: collapse; background: #f8fafc;">
             <thead>
                 <tr style="background: #475569; color: white;">
-                    <th style="padding: 10px;">No PO & Supplier</th>
-                    <th style="padding: 10px;">Nama Bahan</th>
+                    <th style="padding: 10px;">Supplier</th>
+                    <th style="padding: 10px;">Bahan Baku</th>
                     <th style="padding: 10px;">Jumlah</th>
                     <th style="padding: 10px; text-align: center;">Aksi</th>
                 </tr>
@@ -73,9 +73,8 @@
             <tbody>
                 @foreach($sudahDicetak as $item)
                 <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 10px;">
-                        <span style="font-weight: bold; color: #0f7a3a;">{{ $item->po_number }}</span><br>
-                        <span style="font-size: 12px; color: #64748b;">Supplier: {{ $item->nama_supplier ?? 'Tanpa Nama' }}</span>
+                    <td style="padding: 10px; font-weight: bold; color: #0f7a3a;">
+                        {{ $item->nama_supplier ?? 'Tanpa Nama' }}
                     </td>
                     <td style="padding: 10px; font-weight: bold; color: #334155;">
                         {{ $item->bahanBaku->nama_bahan ?? '-' }}
@@ -116,12 +115,12 @@
                 <form action="{{ route('pembelian.prosesBeliMassal') }}" method="POST">
                     @csrf
                     <button class="btn" style="background: #0284c7; padding: 12px 24px; border-radius: 8px; border:none; color:white; cursor:pointer; font-size: 15px;">
-                        🚚 Tandai Semua Sedang Dibeli
+                        🚚 Proses PO di Langkah 2 Saja (Menunggu Barang Datang)
                     </button>
                 </form>
             @else
                 <button class="btn" disabled style="background: #94a3b8; padding: 12px 24px; border-radius: 8px; border:none; color:white; cursor:not-allowed; font-size: 15px;">
-                    🚚 Tandai Semua Sedang Dibeli
+                        🚚 Proses PO di Langkah 2 Saja (Menunggu Barang Datang)
                 </button>
             @endif
         </div>

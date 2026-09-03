@@ -66,30 +66,34 @@
                                 <td style="padding: 10px; text-align: center; color: #d97706; font-weight: bold;">
                                     {{ $detail->jumlah_dibutuhkan }} {{ $detail->bahanBaku->satuan ?? '' }}
                                 </td>
+                                @php
+                                    $satuan = strtolower($detail->bahanBaku->satuan ?? '');
+                                    $nama = strtolower($detail->bahanBaku->nama_bahan ?? '');
+                                    $butuh = (float)($detail->jumlah_dibutuhkan ?? 0);
+                                    
+                                    // Tanpa konversi, cukup masukkan jumlah persis sesuai kebutuhan event
+                                    $saranBeli = $butuh;
+                                    $saranSatuan = $satuan;
+                                @endphp
                                 <td style="padding: 10px; text-align: center;">
-                                    <input type="number" name="jumlah_beli[]" min="0.01" step="0.01" required style="width: 100px; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; text-align: center;">
+                                    <input type="number" name="jumlah_beli[]" value="{{ $saranBeli }}" min="0.01" step="0.01" required style="width: 100px; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; text-align: center;">
                                 </td>
                                 <td style="padding: 10px; text-align: center;">
                                     <select name="satuan_beli[]" required style="padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                                        @php
-                                            $satuan = strtolower($detail->bahanBaku->satuan ?? '');
-                                            $nama = strtolower($detail->bahanBaku->nama_bahan ?? '');
-                                        @endphp
-                                        
                                         @if(str_contains($nama, 'soda water'))
-                                            <option value="botol">botol</option>
-                                            <option value="ml">ml</option>
-                                            <option value="liter">liter</option>
+                                            <option value="botol" {{ $saranSatuan == 'botol' ? 'selected' : '' }}>botol</option>
+                                            <option value="ml" {{ $saranSatuan == 'ml' ? 'selected' : '' }}>ml</option>
+                                            <option value="liter" {{ $saranSatuan == 'liter' ? 'selected' : '' }}>liter</option>
                                         @elseif($satuan == 'ml')
-                                            <option value="ml">ml</option>
-                                            <option value="liter">liter</option>
+                                            <option value="ml" {{ $saranSatuan == 'ml' ? 'selected' : '' }}>ml</option>
+                                            <option value="liter" {{ $saranSatuan == 'liter' ? 'selected' : '' }}>liter</option>
                                         @elseif($satuan == 'gram')
-                                            <option value="gram">gram</option>
-                                            <option value="kg">kg</option>
+                                            <option value="gram" {{ $saranSatuan == 'gram' ? 'selected' : '' }}>gram</option>
+                                            <option value="kg" {{ $saranSatuan == 'kg' ? 'selected' : '' }}>kg</option>
                                         @elseif($satuan == 'pcs')
-                                            <option value="pcs">pcs</option>
+                                            <option value="pcs" selected>pcs</option>
                                         @else
-                                            <option value="{{ $detail->bahanBaku->satuan }}">{{ $detail->bahanBaku->satuan }}</option>
+                                            <option value="{{ $detail->bahanBaku->satuan }}" selected>{{ $detail->bahanBaku->satuan }}</option>
                                         @endif
                                     </select>
                                 </td>
@@ -191,13 +195,14 @@
 
         @if(in_array(auth()->user()->role, ['logistik', 'owner']))
             
-            @if($event->status == 'menunggu_pembelian')
+            @if(in_array($event->status, ['menunggu_pembelian', 'menunggu_barang_event']))
                 <!-- 🔥 LINK MENUJU HALAMAN KHUSUS PO 🔥 -->
                 <a href="{{ route('event.formPO', $event->id) }}" class="btn" style="background: #e67e22; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
                     📄 Buka Halaman Cetak PO
                 </a>
+            @endif
             
-            @elseif($event->status == 'menunggu_barang_event')
+            @if($event->status == 'menunggu_barang_event')
                 <a href="{{ route('event.reviewTerima', $event->id) }}" class="btn" style="background: #0284c7; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
                     📦 Terima Barang Event
                 </a>
