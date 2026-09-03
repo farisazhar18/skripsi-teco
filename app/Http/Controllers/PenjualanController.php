@@ -232,7 +232,7 @@ class PenjualanController extends Controller
 
                 $params = [
                     'transaction_details' => [
-                        'order_id' => $penjualan->id,
+                        'order_id' => $penjualan->id . '-' . time(),
                         'gross_amount' => $penjualan->total_harga,
                     ],
                     'customer_details' => [

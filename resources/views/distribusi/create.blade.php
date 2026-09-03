@@ -37,17 +37,35 @@
                     <p style="color: #92400e; font-size: 14px; margin: 0;">Berikut bahan baku yang menipis. Gunakan sebagai acuan distribusi.</p>
                 </div>
                 
-                <!-- 🔥 DROPDOWN FILTER OUTLET DI DALAM MODAL 🔥 -->
+                <!-- 🔥 DROPDOWN FILTER DI DALAM MODAL 🔥 -->
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <label style="font-size: 13px; color: #92400e; font-weight: bold;">Filter:</label>
                     <select id="filterOutletModal" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #fde68a; outline: none; background: white; color: #b45309; font-weight: bold; cursor: pointer;">
                         <option value="all">Semua Outlet</option>
                         <option value="hasanuddin">Hasanuddin</option>
                         <option value="makmur">Makmur</option>
                     </select>
+
+                    <select id="filterStatusModal" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #fde68a; outline: none; background: white; color: #b45309; font-weight: bold; cursor: pointer;">
+                        <option value="all">Semua Status</option>
+                        <option value="habis">🚨 Habis</option>
+                        <option value="menipis">⚠️ Menipis</option>
+                    </select>
+
+                    <select id="filterKategoriModal" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #fde68a; outline: none; background: white; color: #b45309; font-weight: bold; cursor: pointer;">
+                        <option value="all">Semua Kategori</option>
+                        @php $kategoris = $kebutuhanOutlet->pluck('kategori')->unique()->filter()->sort(); @endphp
+                        @foreach($kategoris as $kat)
+                            <option value="{{ strtolower($kat) }}">{{ ucfirst($kat) }}</option>
+                        @endforeach
+                    </select>
                     
                     <button type="button" onclick="document.getElementById('modalKebutuhan').style.display='none'" style="background: none; border: none; font-size: 28px; color: #b45309; cursor: pointer; line-height: 1; padding: 0; margin-left: 10px;">&times;</button>
                 </div>
+            </div>
+
+            <!-- SEARCH BOX -->
+            <div style="padding: 10px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <input type="text" id="searchKebutuhanModal" placeholder="🔍 Cari nama bahan baku..." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px;">
             </div>
 
             <!-- ISI MODAL (TABEL SCROLLABLE) -->
@@ -81,9 +99,10 @@
                             $rowBg = $isOutletHabis ? '#fef2f2' : '#fefce8'; // Merah muda jika habis, kuning muda jika menipis
                             $statusOutlet = $isOutletHabis ? '🚨 HABIS' : '⚠️ MENIPIS';
                             $statusColor = $isOutletHabis ? '#dc2626' : '#b45309';
+                            $statusKey = $isOutletHabis ? 'habis' : 'menipis';
                         @endphp
                         <!-- 🔥 Tambah class "row-kebutuhan" dan data-outlet buat di-filter pakai Javascript -->
-                        <tr class="row-kebutuhan" data-outlet="{{ strtolower($butuh->outlet) }}" data-bahan="{{ $butuh->nama_bahan }}" data-stok="{{ $stokGudang }}" style="border-bottom: 1px solid #e5e7eb; background-color: {{ $rowBg }}; {{ $stokGudang <= 0 ? 'opacity: 0.75;' : '' }}">
+                        <tr class="row-kebutuhan" data-status="{{ $statusKey }}" data-kategori="{{ strtolower($butuh->kategori ?? '') }}" data-nama="{{ strtolower($butuh->nama_bahan) }}" data-outlet="{{ strtolower($butuh->outlet) }}" data-bahan="{{ $butuh->nama_bahan }}" data-stok="{{ $stokGudang }}" style="border-bottom: 1px solid #e5e7eb; background-color: {{ $rowBg }}; {{ $stokGudang <= 0 ? 'opacity: 0.75;' : '' }}">
                             <td style="padding: 12px 10px; text-align: center;">
                                 @if($stokGudang <= 0)
                                     <span style="font-size: 10px; font-weight: bold; color: #6b7280; border: 1px solid #d1d5db; padding: 2px 4px; border-radius: 4px; background: #f3f4f6;">GUDANG KOSONG</span>
@@ -269,18 +288,34 @@
             }
         });
 
-        // 🔥 LOGIKA JAVASCRIPT BUAT FILTER OUTLET DI MODAL 🔥
-        $('#filterOutletModal').change(function() {
-            var selectedOutlet = $(this).val();
+        // 🔥 LOGIKA JAVASCRIPT BUAT FILTER DI MODAL 🔥
+        function filterModalKebutuhan() {
+            var selectedOutlet = $('#filterOutletModal').val();
+            var selectedStatus = $('#filterStatusModal').val();
+            var selectedKategori = $('#filterKategoriModal').val();
+            var search = $('#searchKebutuhanModal').val().toLowerCase();
+
             $('.row-kebutuhan').each(function() {
                 var rowOutlet = $(this).data('outlet');
-                if (selectedOutlet === 'all' || rowOutlet === selectedOutlet) {
+                var rowStatus = $(this).data('status');
+                var rowKategori = $(this).data('kategori');
+                var rowNama = $(this).data('nama');
+
+                var matchOutlet = (selectedOutlet === 'all' || rowOutlet === selectedOutlet);
+                var matchStatus = (selectedStatus === 'all' || rowStatus === selectedStatus);
+                var matchKategori = (selectedKategori === 'all' || rowKategori === selectedKategori);
+                var matchSearch = (search === '' || rowNama.includes(search));
+
+                if (matchOutlet && matchStatus && matchKategori && matchSearch) {
                     $(this).show();
                 } else {
                     $(this).hide();
                 }
             });
-        });
+        }
+
+        $('#filterOutletModal, #filterStatusModal, #filterKategoriModal').change(filterModalKebutuhan);
+        $('#searchKebutuhanModal').on('input', filterModalKebutuhan);
 
         // 🔥 LOGIKA CEGAH PILIH BEDA OUTLET BERSAMAAN 🔥
         $('.chk-modal-bahan').change(function() {

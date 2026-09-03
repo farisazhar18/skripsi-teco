@@ -161,6 +161,18 @@
             color: #183f37;
         }
 
+        .product-desc {
+            color: #7b8581;
+            font-size: 12px;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Maksimal 2 baris di desktop */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .category {
             color: #8a8073;
             font-size: 13px;
@@ -238,6 +250,17 @@
         }
         .close-btn { background: #efe6d8; color: #183f37; margin-top: 5px; }
 
+        /* --- STEP GUIDE (CARA PESAN) --- */
+        .step-guide { display: flex; flex-direction: column; gap: 15px; }
+        .step-item { display: flex; gap: 12px; align-items: flex-start; background: #f8f6f2; padding: 12px; border-radius: 12px; border: 1px solid #eae5dc; }
+        .step-icon {
+            background: #183f37; color: #efe6d8; width: 28px; height: 28px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; flex-shrink: 0; font-size: 13px;
+        }
+        .step-text strong { display: block; color: #183f37; font-size: 14px; margin-bottom: 2px; }
+        .step-text p { margin: 0; font-size: 12px; color: #5d6b66; line-height: 1.4; }
+
         /* --- CART FLOATING --- */
         .cart-floating {
             position: fixed;
@@ -296,7 +319,7 @@
                 grid-template-columns: 100px 1fr;
                 grid-template-areas:
                     "img title"
-                    "img cat"
+                    "img desc"
                     "img price"
                     "img btn";
                 gap: 2px 14px;
@@ -319,10 +342,15 @@
                 margin-top: 4px;
             }
             
+            .product-desc {
+                grid-area: desc;
+                font-size: 11px;
+                margin: 0 0 2px 0;
+                -webkit-line-clamp: 2; /* Maksimal 2 baris di HP */
+            }
+            
             .category { 
-                grid-area: cat; 
-                font-size: 11px; 
-                margin: 0; 
+                display: none; /* Sembunyikan kategori di HP, karena udah ada judul section di atasnya */
             }
             
             .price { 
@@ -353,6 +381,9 @@
         </div>
         
         <div class="top-bar-actions">
+            <button onclick="openBantuanModal()" class="action-btn" style="border: none; cursor: pointer;">
+                📖 Cara Pesan
+            </button>
             <a href="{{ route('customer.riwayat.form', $outlet) }}" class="action-btn">
                📜 Riwayat
             </a>
@@ -472,10 +503,13 @@
             
             <!-- Opsi Cepat -->
             <div id="opsi-cepat-customer" style="display: none; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; user-select: none;">
+                <label id="label-with-sugar-cust" style="display: none; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; user-select: none;">
+                    <input type="checkbox" id="chk-with-sugar-cust" style="margin: 0; cursor: pointer;"> With Sugar
+                </label>
+                <label id="label-less-sugar-cust" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; user-select: none;">
                     <input type="checkbox" id="chk-less-sugar-cust" style="margin: 0; cursor: pointer;"> Less Sugar
                 </label>
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; user-select: none;">
+                <label id="label-no-sugar-cust" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; user-select: none;">
                     <input type="checkbox" id="chk-no-sugar-cust" style="margin: 0; cursor: pointer;"> No Sugar
                 </label>
                 <label id="label-less-ice-cust" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; user-select: none;">
@@ -492,6 +526,46 @@
             <button type="submit" id="btnSubmitOrder" class="btn" style="margin-top: 10px;">+ Tambah ke Keranjang</button>
             <button type="button" class="btn close-btn" onclick="closeModal()">Batal</button>
         </form>
+    </div>
+</div>
+
+<!-- Modal Cara Pesan -->
+<div class="modal" id="bantuanModal">
+    <div class="modal-box">
+        <h2 style="margin-bottom: 18px; font-size: 20px; text-align: center;">Cara Pemesanan 💡</h2>
+        
+        <div class="step-guide">
+            <div class="step-item">
+                <div class="step-icon">1</div>
+                <div class="step-text">
+                    <strong>Pilih & Tambah Menu</strong>
+                    <p>Pilih menu favoritmu, atur variannya, lalu klik "Tambah ke Keranjang".</p>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-icon">2</div>
+                <div class="step-text">
+                    <strong>Lengkapi Data & Checkout</strong>
+                    <p>Buka keranjang, isi <b>Nama</b> dan <b>No. HP</b>, lalu pilih pembayaran (<b>Tunai/QRIS</b>).</p>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-icon">3</div>
+                <div class="step-text">
+                    <strong>Lakukan Pembayaran</strong>
+                    <p>Jika <b>Tunai</b>, tunjukkan nomor pesanan ke kasir. Jika <b>QRIS</b>, langsung scan & bayar dari HP.</p>
+                </div>
+            </div>
+            <div class="step-item">
+                <div class="step-icon">4</div>
+                <div class="step-text">
+                    <strong>Pantau & Tunggu</strong>
+                    <p>Pantau pesanan di halaman status dan harap menunggu hingga <b>"Siap Diambil"</b>.</p>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn" onclick="closeBantuanModal()" style="margin-top: 20px;">Paham, Terima Kasih!</button>
     </div>
 </div>
 
@@ -523,9 +597,17 @@
         const opsiCepat = document.getElementById('opsi-cepat-customer');
 
         // Reset checkbox
+        document.getElementById('chk-with-sugar-cust').checked = false;
         document.getElementById('chk-less-sugar-cust').checked = false;
         document.getElementById('chk-no-sugar-cust').checked = false;
         document.getElementById('chk-less-ice-cust').checked = false;
+
+        // Tampilkan 'With Sugar' HANYA JIKA produknya Americano
+        if (nama.toLowerCase().includes('americano')) {
+            document.getElementById('label-with-sugar-cust').style.display = 'flex';
+        } else {
+            document.getElementById('label-with-sugar-cust').style.display = 'none';
+        }
 
         tipeSelect.innerHTML = '';
 
@@ -625,11 +707,20 @@
         document.getElementById('orderModal').classList.remove('active');
     }
 
+    function openBantuanModal() {
+        document.getElementById('bantuanModal').classList.add('active');
+    }
+
+    function closeBantuanModal() {
+        document.getElementById('bantuanModal').classList.remove('active');
+    }
+
     // Intercept form submit untuk gabungkan Keterangan
     document.getElementById('formModalOrder').addEventListener('submit', function(e) {
         let ketManual = document.getElementById('inputCatatan').value.trim();
         let arrayKet = [];
 
+        if (document.getElementById('chk-with-sugar-cust').checked) arrayKet.push("With Sugar");
         if (document.getElementById('chk-less-sugar-cust').checked) arrayKet.push("Less Sugar");
         if (document.getElementById('chk-no-sugar-cust').checked) arrayKet.push("No Sugar");
         if (document.getElementById('chk-less-ice-cust').checked) arrayKet.push("Less Ice");

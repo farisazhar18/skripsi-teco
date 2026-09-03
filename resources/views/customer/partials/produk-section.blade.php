@@ -29,6 +29,12 @@
 
                     <h3>{{ $produk->nama_produk }}</h3>
 
+                    @if(!empty($produk->deskripsi))
+                        <div class="product-desc">
+                            {{ $produk->deskripsi }}
+                        </div>
+                    @endif
+
                     <div class="category">
                         {{ ucfirst($produk->kategori) }}
                     </div>

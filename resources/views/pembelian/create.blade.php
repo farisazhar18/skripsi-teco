@@ -50,6 +50,12 @@
                 
                 <!-- DROPDOWN FILTER -->
                 <div style="display: flex; align-items: center; gap: 10px;">
+                    <select id="filterOutletStok" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #bfdbfe; outline: none; background: white; color: #1d4ed8; font-weight: bold; cursor: pointer;">
+                        <option value="all">Semua Outlet</option>
+                        <option value="hasanuddin">Hasanuddin</option>
+                        <option value="makmur">Makmur</option>
+                    </select>
+
                     <select id="filterStatusStok" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #bfdbfe; outline: none; background: white; color: #1d4ed8; font-weight: bold; cursor: pointer;">
                         <option value="all">Semua Status</option>
                         <option value="habis">🚨 Habis</option>
@@ -79,11 +85,14 @@
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                     <thead style="position: sticky; top: 0; background-color: #fff; z-index: 1;">
                         <tr style="border-bottom: 2px solid #bfdbfe; color: #1d4ed8;">
+                            <th style="padding: 15px 10px; text-align: center;">Pilih</th>
+                            <th style="padding: 15px 10px; text-align: left;">Outlet</th>
                             <th style="padding: 15px 10px; text-align: left;">Bahan Baku</th>
                             <th style="padding: 15px 10px; text-align: center;">Kategori</th>
                             <th style="padding: 15px 10px; text-align: center;">Stok Sekarang</th>
                             <th style="padding: 15px 10px; text-align: center;">Stok Minimum</th>
                             <th style="padding: 15px 10px; text-align: center;">Status</th>
+                            <th style="padding: 15px 10px; text-align: center;">Beli Berapa?</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -109,8 +118,17 @@
                                 $statusColor = '#16a34a';
                                 $statusKey = 'aman';
                             }
+                            
+                            $saranBeli = $bahan->stok_minimum > $bahan->stok ? ($bahan->stok_minimum - $bahan->stok) * 2 : 1;
+                            if($saranBeli <= 0) $saranBeli = 1;
                         @endphp
-                        <tr class="row-stok-gudang" data-status="{{ $statusKey }}" data-kategori="{{ strtolower($bahan->kategori ?? '') }}" data-nama="{{ strtolower($bahan->nama_bahan) }}" style="border-bottom: 1px solid #e5e7eb; background-color: {{ $rowBg }};">
+                        <tr class="row-stok-gudang" data-status="{{ $statusKey }}" data-outlet="{{ strtolower($bahan->outlet ?? '') }}" data-kategori="{{ strtolower($bahan->kategori ?? '') }}" data-nama="{{ strtolower($bahan->nama_bahan) }}" data-id="{{ $bahan->id }}" style="border-bottom: 1px solid #e5e7eb; background-color: {{ $rowBg }};">
+                            <td style="padding: 12px 10px; text-align: center;">
+                                <input type="checkbox" class="chk-modal-bahan" style="transform: scale(1.3); cursor: pointer;">
+                            </td>
+                            <td style="padding: 12px 10px; font-weight: 600; color: #92400e;">
+                                {{ ucfirst($bahan->outlet ?? '-') }}
+                            </td>
                             <td style="padding: 12px 10px; font-weight: 600; color: #1e293b;">
                                 {{ $bahan->nama_bahan }}
                             </td>
@@ -128,13 +146,17 @@
                                     {{ $statusLabel }}
                                 </span>
                             </td>
+                            <td style="padding: 12px 10px; text-align: center;">
+                                <input type="number" class="input-modal-jumlah" value="{{ $saranBeli }}" min="1" style="width: 70px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 5px;">
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
             
-            <div style="padding: 15px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; background-color: #f8fafc;">
+            <div style="padding: 15px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; background-color: #f8fafc;">
+                <button type="button" id="btnIntegrate" style="background-color: #1d4ed8; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Pilih & Terapkan ke Form Utama</button>
                 <button type="button" onclick="document.getElementById('modalStokGudang').style.display='none'" style="background-color: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Tutup</button>
             </div>
         </div>
@@ -323,22 +345,98 @@
             }
         });
 
+        // 🔥 LOGIKA INTEGRASI MODAL KE FORM UTAMA 🔥
+        $('#btnIntegrate').click(function() {
+            var itemsToAdd = [];
+            var hasError = false;
+
+            $('.chk-modal-bahan:checked').each(function() {
+                var row = $(this).closest('tr');
+                var id = row.data('id'); 
+                var nama = row.data('nama');
+                var jumlah = parseFloat(row.find('.input-modal-jumlah').val());
+
+                if (isNaN(jumlah) || jumlah <= 0) {
+                    alert('Error: Jumlah pembelian untuk "' + nama + '" harus lebih dari 0.');
+                    hasError = true;
+                    return false; // break loop
+                }
+
+                itemsToAdd.push({ id: id, jumlah: jumlah });
+            });
+
+            if (hasError) return;
+
+            if (itemsToAdd.length === 0) {
+                alert('Pilih minimal 1 bahan baku untuk diintegrasikan.');
+                return;
+            }
+
+            // Kosongkan tabel utama
+            $('#tbody-pengajuan').empty();
+
+            // Masukkan data terpilih ke tabel utama
+            itemsToAdd.forEach(function(item) {
+                var newRow = `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 12px 15px;">
+                            <select name="bahan_baku_id[]" class="select2-bahan" style="width: 100%;" required>
+                                <option value="">-- Pilih Bahan Baku --</option>
+                                @foreach($bahanBaku as $bahanItem)
+                                    <option value="{{ $bahanItem->id }}" data-satuan="{{ strtolower($bahanItem->satuan) }}" data-nama="{{ strtolower($bahanItem->nama_bahan) }}" ${item.nama === '{{ strtolower($bahanItem->nama_bahan) }}' ? 'selected' : ''}>
+                                        {{ $bahanItem->nama_bahan }} (Stok: {{ $bahanItem->satuan }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </td>
+                        <td style="padding: 12px 15px;">
+                            <input type="number" name="jumlah[]" min="1" value="${item.jumlah}" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; text-align: center;">
+                        </td>
+                        <td style="padding: 12px 15px;">
+                            <select name="satuan_beli[]" class="satuan-beli" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                                <option value="">-- Pilih Bahan Baku Dulu --</option>
+                            </select>
+                        </td>
+                        <td style="padding: 12px 15px;">
+                            <input type="text" name="keterangan[]" placeholder="Opsional" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                        </td>
+                        <td style="text-align: center; padding: 12px 15px; vertical-align: middle;">
+                            <button type="button" class="btn-sm remove-row" title="Hapus baris" style="background-color: #fee2e2; color: #dc2626; border: none; border-radius: 6px; width: 34px; height: 34px; cursor: pointer; font-size: 18px; font-weight: bold; transition: 0.2s;">
+                                &times;
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                $('#tbody-pengajuan').append(newRow);
+            });
+
+            // Re-inisialisasi Select2 dan trigger change untuk ngisi dropdown satuan beli
+            initSelect2();
+            $('.select2-bahan').trigger('change');
+            
+            // Tutup modal otomatis setelah apply
+            document.getElementById('modalStokGudang').style.display = 'none';
+        });
+
         // 🔥 FILTER & SEARCH STOK GUDANG MODAL
         function filterStokGudang() {
+            var outlet = $('#filterOutletStok').val();
             var status = $('#filterStatusStok').val();
             var kategori = $('#filterKategoriStok').val();
             var search = $('#searchStokGudang').val().toLowerCase();
 
             $('.row-stok-gudang').each(function() {
+                var rowOutlet = $(this).data('outlet');
                 var rowStatus = $(this).data('status');
                 var rowKategori = $(this).data('kategori');
                 var rowNama = $(this).data('nama');
 
+                var matchOutlet = (outlet === 'all' || rowOutlet === outlet);
                 var matchStatus = (status === 'all' || rowStatus === status);
                 var matchKategori = (kategori === 'all' || rowKategori === kategori);
                 var matchSearch = (search === '' || rowNama.includes(search));
 
-                if (matchStatus && matchKategori && matchSearch) {
+                if (matchOutlet && matchStatus && matchKategori && matchSearch) {
                     $(this).show();
                 } else {
                     $(this).hide();
@@ -346,7 +444,7 @@
             });
         }
 
-        $('#filterStatusStok, #filterKategoriStok').change(filterStokGudang);
+        $('#filterOutletStok, #filterStatusStok, #filterKategoriStok').change(filterStokGudang);
         $('#searchStokGudang').on('input', filterStokGudang);
 
     });

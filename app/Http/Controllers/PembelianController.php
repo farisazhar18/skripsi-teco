@@ -103,10 +103,9 @@ class PembelianController extends Controller
             ->orderBy('nama_bahan')
             ->get();
 
-        // Data stok untuk modal cek stok (gabungan semua outlet)
-        $stokGudang = BahanBaku::selectRaw('nama_bahan, kategori, satuan, SUM(stok) as stok, SUM(stok_minimum) as stok_minimum')
-            ->groupBy('nama_bahan', 'kategori', 'satuan')
-            ->orderByRaw('CASE WHEN SUM(stok) <= 0 THEN 0 WHEN SUM(stok) <= SUM(stok_minimum) THEN 1 ELSE 2 END ASC')
+        // Data stok untuk modal cek stok (per outlet)
+        $stokGudang = BahanBaku::orderByRaw('CASE WHEN stok <= 0 THEN 0 WHEN stok <= stok_minimum THEN 1 ELSE 2 END ASC')
+            ->orderBy('outlet')
             ->orderBy('kategori')
             ->orderBy('nama_bahan')
             ->get();

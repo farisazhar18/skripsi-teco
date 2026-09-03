@@ -259,6 +259,10 @@ class CustomerOrderController extends Controller
                     preg_match('/Extra Syrup\s+([^\s]+)/', $riwayat->keterangan, $matches);
                     $namaSirup = $matches[1] ?? '';
                     $riwayat->keterangan = 'Extra Syrup ' . $namaSirup . ' (QR Customer) - Order #' . $penjualan->id;
+                } elseif (str_contains($riwayat->keterangan, 'With Sugar (Americano)')) {
+                    $riwayat->keterangan = 'With Sugar (Americano - QR Customer) - Order #' . $penjualan->id;
+                } elseif (str_contains($riwayat->keterangan, 'Less Sugar (Americano)')) {
+                    $riwayat->keterangan = 'Less Sugar (Americano - QR Customer) - Order #' . $penjualan->id;
                 } else {
                     $riwayat->keterangan = 'Terjual (QR Customer) - Order #' . $penjualan->id;
                 }
@@ -287,7 +291,7 @@ class CustomerOrderController extends Controller
 
                     $params = [
                         'transaction_details' => [
-                            'order_id' => $penjualan->id, 
+                            'order_id' => $penjualan->id . '-' . time(), 
                             'gross_amount' => $totalHarga,
                         ],
                         'enabled_payments' => ['gopay', 'other_qris'],
@@ -425,8 +429,11 @@ class CustomerOrderController extends Controller
 
         if ($hashed == $request->signature_key) {
             if ($request->transaction_status == 'settlement' || $request->transaction_status == 'capture') {
+                // Parse order_id karena sekarang formatnya ID-TIMESTAMP (e.g., 184-1715423000)
+                $realOrderId = explode('-', $request->order_id)[0];
+                
                 // Update status pesanan ke 'menunggu' (siap diproses barista)
-                $penjualan = Penjualan::find($request->order_id);
+                $penjualan = Penjualan::find($realOrderId);
                 if ($penjualan) {
                     $penjualan->update(['status' => 'menunggu']);
                 }
@@ -600,6 +607,57 @@ class CustomerOrderController extends Controller
                         }
                     }
                     $bahanSirupOutlet->save();
+                }
+            }
+        }
+
+        // Handle Sugar khusus untuk Americano
+        if (str_contains(strtolower($produk->nama_produk), 'americano')) {
+            $penguranganGula = 0;
+            $namaGula = '';
+            
+            if (!empty($keterangan) && str_contains(strtolower($keterangan), 'with sugar')) {
+                $penguranganGula = 20;
+                $namaGula = 'With Sugar';
+            } elseif (!empty($keterangan) && str_contains(strtolower($keterangan), 'less sugar')) {
+                $penguranganGula = 10;
+                $namaGula = 'Less Sugar';
+            }
+            
+            if ($penguranganGula > 0) {
+                $bahanGulaOutlet = BahanBaku::where('nama_bahan', 'LIKE', '%Gula Pasir%')
+                    ->where('outlet', $outlet)
+                    ->first();
+                    
+                if ($bahanGulaOutlet) {
+                    $jumlahGulaTerpakai = $penguranganGula * $item['jumlah'];
+                    
+                    if ($isAdding) {
+                        if ($bahanGulaOutlet->stok < $jumlahGulaTerpakai) {
+                            throw new \Exception('Maaf, stok Gula Pasir tidak mencukupi untuk pesanan Americano.');
+                        }
+                        $bahanGulaOutlet->stok -= $jumlahGulaTerpakai;
+                        RiwayatPenggunaanBahan::create([
+                            'bahan_baku_id' => $bahanGulaOutlet->id,
+                            'outlet' => $outlet,
+                            'jumlah_terpakai' => $jumlahGulaTerpakai,
+                            'keterangan' => 'Ditahan ' . $namaGula . ' (Americano) - ' . session()->getId()
+                        ]);
+                    } else {
+                        $bahanGulaOutlet->stok += $jumlahGulaTerpakai;
+                        
+                        $riwayatGula = RiwayatPenggunaanBahan::where('bahan_baku_id', $bahanGulaOutlet->id)
+                            ->where('outlet', $outlet)
+                            ->where('jumlah_terpakai', $jumlahGulaTerpakai)
+                            ->where('keterangan', 'Ditahan ' . $namaGula . ' (Americano) - ' . session()->getId())
+                            ->orderBy('created_at', 'desc')
+                            ->first();
+
+                        if ($riwayatGula) {
+                            $riwayatGula->delete();
+                        }
+                    }
+                    $bahanGulaOutlet->save();
                 }
             }
         }

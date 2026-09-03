@@ -88,6 +88,36 @@ class DistribusiController extends Controller
             ->orderBy('nama_bahan')
             ->get();
 
+        // Urutkan ulang: Taruh "Gudang Kosong" di paling bawah
+        $kebutuhanOutlet = $kebutuhanOutlet->map(function($butuh) use ($bahanTersedia) {
+            $stokGudang = 0;
+            foreach($bahanTersedia as $tersedia) {
+                if (strtolower($tersedia->nama_bahan) == strtolower($butuh->nama_bahan)) {
+                    $stokGudang = $tersedia->total_sisa;
+                    break;
+                }
+            }
+            $butuh->stok_gudang_temp = $stokGudang;
+            return $butuh;
+        })->sort(function($a, $b) {
+            $aKosong = $a->stok_gudang_temp <= 0;
+            $bKosong = $b->stok_gudang_temp <= 0;
+            
+            if ($aKosong !== $bKosong) {
+                return $aKosong ? 1 : -1;
+            }
+            
+            if ($a->stok != $b->stok) {
+                return $a->stok <=> $b->stok;
+            }
+            
+            if ($a->outlet != $b->outlet) {
+                return $a->outlet <=> $b->outlet;
+            }
+            
+            return $a->nama_bahan <=> $b->nama_bahan;
+        })->values();
+
         return view('distribusi.create', compact('bahanTersedia', 'namaBahanDipilih', 'kebutuhanOutlet'));
     }
 

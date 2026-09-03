@@ -68,7 +68,7 @@
 
 <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center; justify-content: flex-end;">
     <!-- Bagian Kanan: Tombol Export PDF -->
-    <a href="/laporan-distribusi/pdf?tanggal_awal={{ request('tanggal_awal') }}&tanggal_akhir={{ request('tanggal_akhir') }}&outlet={{ request('outlet') }}" class="btn-secondary" style="padding: 10px 20px; border-radius: 8px; background: #efe6d8; text-decoration: none; font-weight: 600; color: #183f37; border: 1px solid #d8cbb8; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <a href="/laporan-bahan-baku/pdf?outlet={{ request('outlet') }}&status_stok={{ request('status_stok') }}&search_bahan={{ request('search_bahan') }}" class="btn-secondary" style="padding: 10px 20px; border-radius: 8px; background: #efe6d8; text-decoration: none; font-weight: 600; color: #183f37; border: 1px solid #d8cbb8; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         📥 Export PDF
     </a>
 </div>
