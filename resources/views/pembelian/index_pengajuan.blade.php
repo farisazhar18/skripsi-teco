@@ -36,7 +36,19 @@
         @endif
     </div>
 
-    <div>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- FORM FILTER STATUS -->
+        <form method="GET" action="{{ route('pembelian.pengajuan') }}" style="margin: 0;">
+            <select name="status" onchange="this.form.submit()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; outline: none; background: white; font-weight: 500; color: #475569; height: 42px; cursor: pointer;">
+                <option value="">Semua Status</option>
+                <option value="menunggu_acc" {{ request('status') == 'menunggu_acc' ? 'selected' : '' }}>⏳ Menunggu ACC</option>
+                <option value="menunggu_pembelian" {{ request('status') == 'menunggu_pembelian' ? 'selected' : '' }}>🛒 Menunggu PO</option>
+                <option value="menunggu_barang" {{ request('status') == 'menunggu_barang' ? 'selected' : '' }}>🚚 Menunggu Barang</option>
+                <option value="disetujui" {{ request('status') == 'disetujui' ? 'selected' : '' }}>✅ Masuk Gudang</option>
+                <option value="ditolak" {{ request('status') == 'ditolak' ? 'selected' : '' }}>❌ Ditolak</option>
+            </select>
+        </form>
+
         <a href="{{ route('pembelian.stok') }}" class="btn" style="background: #183f37; height: 42px; display: flex; align-items: center; padding: 0 16px; margin: 0; border-radius: 6px;">
             Lihat Stok Gudang
         </a>

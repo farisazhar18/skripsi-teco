@@ -27,8 +27,54 @@
     </div>
 </div>
 
+<!-- 🔥 TABS FILTER (PESANAN AKTIF vs RIWAYAT HARI INI) -->
+<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <a href="{{ route('penjualan.index') }}" class="btn" style="{{ request('tab') != 'selesai' ? 'background: #183f37;' : 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;' }}">
+        ⏳ Pesanan Aktif
+    </a>
+    <a href="{{ route('penjualan.index', ['tab' => 'selesai']) }}" class="btn" style="{{ request('tab') == 'selesai' ? 'background: #183f37;' : 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;' }}">
+        ✅ Riwayat Hari Ini
+    </a>
+</div>
+
+@if(request('tab') == 'selesai')
+<div class="card" style="padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; background: white; font-size: 14px;">
+        <thead style="background: #183f37; color: white;">
+            <tr>
+                <th style="padding: 15px;">Waktu</th>
+                <th style="padding: 15px;">No Pesanan</th>
+                <th style="padding: 15px;">Pelanggan</th>
+                <th style="padding: 15px;">Item</th>
+                <th style="padding: 15px;">Metode</th>
+                <th style="padding: 15px;">Total</th>
+                <th style="padding: 15px;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($penjualans as $p)
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 15px;">{{ \Carbon\Carbon::parse($p->created_at)->format('H:i') }}</td>
+                <td style="padding: 15px; font-weight: bold;">#{{ $p->outlet == 'hasanuddin' ? 'TCH' : 'TCM' }}-{{ date('ym', strtotime($p->tanggal)) }}-{{ str_pad($p->no_urut_bulanan, 4, '0', STR_PAD_LEFT) }}</td>
+                <td style="padding: 15px;">{{ $p->nama_customer ?? 'Tanpa Nama' }}</td>
+                <td style="padding: 15px;">{{ $p->detailPenjualans->sum('jumlah') }} item</td>
+                <td style="padding: 15px;">{{ $p->metode_pembayaran }}</td>
+                <td style="padding: 15px; font-weight: bold;">Rp {{ number_format($p->total_harga, 0, ',', '.') }}</td>
+                <td style="padding: 15px;">
+                    <a href="{{ route('penjualan.show', $p->id) }}" class="btn btn-sm" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Cek Detail</a>
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">Belum ada riwayat pesanan hari ini</td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
+@else
 <div class="order-grid">
-    @foreach($penjualans as $p)
+    @forelse($penjualans as $p)
     @php
         // 🎨 Nentuin warna border dan badge
         if($p->status == 'menunggu_pembayaran') {
@@ -115,8 +161,13 @@
             
         </div>
     </div>
-    @endforeach
+    @empty
+    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: white; border-radius: 12px; border: 1px dashed #cbd5e1;">
+        <h3 style="color: #64748b; margin: 0;">Belum ada data pesanan</h3>
+    </div>
+    @endforelse
 </div>
+@endif
 
 <!-- ======================================================== -->
 <!-- 💡 MODAL POPUP HITUNG KEMBALIAN -->
@@ -152,6 +203,7 @@
             <button onclick="tutupModal()" class="btn-batal">Batal</button>
             <form id="formAccTunai" method="POST" class="m-0">
                 @csrf
+                <input type="hidden" name="uang_diterima" id="input_uang_diterima">
                 <button type="submit" id="btnKonfirmasi" class="btn-konfirmasi" disabled>Selesai & ACC</button>
             </form>
         </div>
@@ -159,14 +211,18 @@
 </div>
 
 <script>
-    // 1. Notif Suara
-    let latestOrderId = "{{ $penjualans->max('id') ?? 0 }}";
-    let previousOrderId = localStorage.getItem('latestOrderId_POS');
-    if (previousOrderId !== null && latestOrderId !== "0" && parseInt(latestOrderId) > parseInt(previousOrderId)) {
-        let notifSound = new Audio("{{ asset('audio/ting-tiong.mp3') }}");
-        notifSound.play().catch(function(error) { console.log("Autoplay ditahan."); });
+    let isTabSelesai = "{{ request('tab') == 'selesai' ? 'true' : 'false' }}";
+
+    // 1. Notif Suara (Dimatikan kalau lagi di tab selesai)
+    if (isTabSelesai === "false") {
+        let latestOrderId = "{{ $penjualans->max('id') ?? 0 }}";
+        let previousOrderId = localStorage.getItem('latestOrderId_POS');
+        if (previousOrderId !== null && latestOrderId !== "0" && parseInt(latestOrderId) > parseInt(previousOrderId)) {
+            let notifSound = new Audio("{{ asset('audio/ting-tiong.mp3') }}");
+            notifSound.play().catch(function(error) { console.log("Autoplay ditahan."); });
+        }
+        localStorage.setItem('latestOrderId_POS', latestOrderId);
     }
-    localStorage.setItem('latestOrderId_POS', latestOrderId);
 
     // 2. LOGIKA FILTER REAL-TIME JAVASCRIPT 🔥
     function filterNama() {
@@ -185,14 +241,16 @@
         });
     }
 
-    // 3. Auto Refresh Ditahan Kalau Lagi Ngetik Filter
-    let autoRefreshTimer = setInterval(function() { 
-        let searchInput = document.getElementById('inputCariNama');
-        // Jangan refresh kalau inputan lagi diklik, ATAU ada teks pencariannya
-        if(document.activeElement !== searchInput && searchInput.value.trim() === '') {
-            window.location.reload(); 
-        }
-    }, 15000);
+    // 3. Auto Refresh Ditahan Kalau Lagi Ngetik Filter & Gak jalan di tab Selesai
+    if (isTabSelesai === "false") {
+        let autoRefreshTimer = setInterval(function() { 
+            let searchInput = document.getElementById('inputCariNama');
+            // Jangan refresh kalau inputan lagi diklik, ATAU ada teks pencariannya
+            if(document.activeElement !== searchInput && searchInput.value.trim() === '') {
+                window.location.reload(); 
+            }
+        }, 15000);
+    }
 
     // 4. Modal Kembalian
     let totalTagihanSekarang = 0;
@@ -214,12 +272,14 @@
 
     function tutupModal() {
         document.getElementById('modalKembalian').style.display = 'none';
-        autoRefreshTimer = setInterval(function() { 
-            let searchInput = document.getElementById('inputCariNama');
-            if(document.activeElement !== searchInput && searchInput.value.trim() === '') {
-                window.location.reload(); 
-            }
-        }, 15000);
+        if (isTabSelesai === "false") {
+            autoRefreshTimer = setInterval(function() { 
+                let searchInput = document.getElementById('inputCariNama');
+                if(document.activeElement !== searchInput && searchInput.value.trim() === '') {
+                    window.location.reload(); 
+                }
+            }, 15000);
+        }
     }
 
     function buatTombolQuickCash(totalHarga) {
@@ -247,6 +307,8 @@
         let sisa = inputDuit - totalTagihanSekarang;
         let displayKembalian = document.getElementById('kembalian-display');
         let btnKonfirmasi = document.getElementById('btnKonfirmasi');
+        
+        document.getElementById('input_uang_diterima').value = inputDuit;
 
         if (sisa < 0) {
             displayKembalian.innerText = "Uang Kurang!";

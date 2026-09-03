@@ -8,11 +8,22 @@ use Illuminate\Http\Request;
 
 class PembelianController extends Controller
 {
-    public function indexPengajuan() 
+    public function indexPengajuan(Request $request) 
     {
-        $data = Pembelian::with('bahanBaku')
-            // Logika urutan kustom SQL disamakan persis dengan logika if-else di Blade
-            ->orderByRaw("
+        $query = Pembelian::with('bahanBaku');
+
+        $statusFilter = $request->query('status');
+        if ($statusFilter) {
+            if ($statusFilter == 'menunggu_acc') {
+                $query->where(function($q) {
+                    $q->whereNull('status_acc')->orWhere('status_acc', '');
+                });
+            } else {
+                $query->where('status_acc', $statusFilter);
+            }
+        }
+
+        $data = $query->orderByRaw("
                 CASE 
                     WHEN status_acc = 'menunggu_pembelian' THEN 2
                     WHEN status_acc = 'menunggu_barang' THEN 3 
@@ -92,9 +103,10 @@ class PembelianController extends Controller
             ->orderBy('nama_bahan')
             ->get();
 
-        // Data stok gudang untuk modal cek stok
-        $stokGudang = BahanBaku::where('outlet', 'gudang')
-            ->orderByRaw('CASE WHEN stok <= 0 THEN 0 WHEN stok <= stok_minimum THEN 1 ELSE 2 END ASC')
+        // Data stok untuk modal cek stok (gabungan semua outlet)
+        $stokGudang = BahanBaku::selectRaw('nama_bahan, kategori, satuan, SUM(stok) as stok, SUM(stok_minimum) as stok_minimum')
+            ->groupBy('nama_bahan', 'kategori', 'satuan')
+            ->orderByRaw('CASE WHEN SUM(stok) <= 0 THEN 0 WHEN SUM(stok) <= SUM(stok_minimum) THEN 1 ELSE 2 END ASC')
             ->orderBy('kategori')
             ->orderBy('nama_bahan')
             ->get();

@@ -123,8 +123,8 @@
         <form action="{{ route('penjualan.store') }}" method="POST" id="form-checkout">
             @csrf
             <input type="hidden" name="cart_data" id="cart_data">
-            
             <input type="hidden" name="metode_bayar" id="metode_bayar_hidden">
+            <input type="hidden" name="uang_diterima" id="uang_diterima_hidden">
             
             <button type="button" class="btn btn-success" onclick="prosesCheckout()" style="width: 100%; font-size: 18px; padding: 15px;">Bayar Sekarang</button>
         </form>
@@ -461,6 +461,7 @@
 
         // AMBIL DATA & TEMBAK KE FORM
         document.getElementById('metode_bayar_hidden').value = metode;
+        document.getElementById('uang_diterima_hidden').value = uang;
         document.getElementById('cart_data').value = JSON.stringify(cart);
         
         document.getElementById('form-checkout').submit();

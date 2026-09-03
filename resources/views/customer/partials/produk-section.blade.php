@@ -46,12 +46,13 @@
                         <button class="btn"
                             onclick="openModal(
                                 '{{ $produk->id }}',
-                                '{{ $produk->nama_produk }}',
+                                '{{ addslashes($produk->nama_produk) }}',
                                 '{{ $produk->tipe_produk }}',
                                 '{{ $produk->tersedia_hot }}',
                                 '{{ $produk->tersedia_ice }}',
                                 {{ json_encode($produk->varianTersedia($outlet)) }},
-                                {{ $produk->bisa_extra_syrup ? '1' : '0' }}
+                                {{ $produk->bisa_extra_syrup ? '1' : '0' }},
+                                '{{ addslashes($produk->deskripsi ?? '') }}'
                             )">
                             + Pesan
                         </button>

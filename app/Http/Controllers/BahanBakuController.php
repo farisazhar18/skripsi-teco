@@ -16,10 +16,10 @@ class BahanBakuController extends Controller
     {
         $user = auth()->user();
 
-        $query = BahanBaku::query();
+        $query = BahanBaku::where('is_active', true);
         
         // Buat narik daftar nama bahan baku (buat ngisi dropdown TomSelect)
-        $listBahanQuery = BahanBaku::select('nama_bahan')->distinct();
+        $listBahanQuery = BahanBaku::where('is_active', true)->select('nama_bahan')->distinct();
 
         // Filter Outlet
         if ($user->role == 'barista') {
@@ -212,7 +212,7 @@ class BahanBakuController extends Controller
 
         // KUNCI PINTU HAPUS: Tolak selain Logistik, Manager, dan Owner
         if ($user->role !== 'logistik' && $user->role !== 'operational_manager' && $user->role !== 'owner') {
-            abort(403, 'Akses Ditolak: Hanya divisi Logistik dan Manajemen yang dapat menghapus master data bahan baku.');
+            abort(403, 'Akses Ditolak: Hanya divisi Logistik dan Manajemen yang dapat menonaktifkan master data bahan baku.');
         }
 
         $data = BahanBaku::findOrFail($id);
@@ -221,9 +221,52 @@ class BahanBakuController extends Controller
             abort(403);
         }
 
-        $data->delete();
+        // $data->delete(); // SEKARANG KITA NONAKTIFKAN BUKAN HAPUS PERMANEN
+        $data->is_active = false;
+        $data->save();
 
-        return redirect('/bahan-baku')->with('success', 'Data berhasil dihapus.');
+        return redirect('/bahan-baku')->with('success', 'Bahan Baku berhasil dinonaktifkan.');
+    }
+
+    public function indexNonaktif(Request $request)
+    {
+        $user = auth()->user();
+
+        // Hanya manajemen yang bisa lihat list nonaktif
+        if ($user->role !== 'logistik' && $user->role !== 'operational_manager' && $user->role !== 'owner') {
+            abort(403, 'Akses Ditolak.');
+        }
+
+        $query = BahanBaku::where('is_active', false);
+        
+        if ($request->outlet) {
+            $query->where('outlet', $request->outlet);
+        }
+
+        $data = $query->orderBy('outlet', 'asc')
+            ->orderBy('kategori', 'asc')
+            ->orderBy('nama_bahan', 'asc')
+            ->get();
+
+        $outlet = $request->outlet;
+
+        return view('bahan_baku.nonaktif', compact('data', 'outlet'));
+    }
+
+    public function aktifkan(string $id)
+    {
+        $user = auth()->user();
+
+        // KUNCI PINTU AKTIFKAN: Hanya Logistik, Manager, dan Owner
+        if ($user->role !== 'logistik' && $user->role !== 'operational_manager' && $user->role !== 'owner') {
+            abort(403, 'Akses Ditolak.');
+        }
+
+        $data = BahanBaku::findOrFail($id);
+        $data->is_active = true;
+        $data->save();
+
+        return redirect()->route('bahan-baku.nonaktif')->with('success', 'Bahan Baku berhasil diaktifkan kembali.');
     }
 
     public function rekapHarian(Request $request)

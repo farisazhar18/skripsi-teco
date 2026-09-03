@@ -436,7 +436,8 @@
 
 <div class="modal" id="orderModal">
     <div class="modal-box">
-        <h2 id="modalNamaProduk">Pesan Menu</h2>
+        <h2 id="modalNamaProduk" style="margin-bottom: 5px;">Pesan Menu</h2>
+        <p id="modalDeskripsiProduk" style="font-size: 13px; color: #5d6b66; margin-top: 0; margin-bottom: 18px; line-height: 1.4;"></p>
 
         <form id="formModalOrder" method="POST">
             @csrf
@@ -469,9 +470,23 @@
             <label style="font-size: 13px; font-weight: 600; color: #5d6b66;">Jumlah</label>
             <input type="number" name="jumlah" value="1" min="1" required>
             
+            <!-- Opsi Cepat -->
+            <div id="opsi-cepat-customer" style="display: none; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; user-select: none;">
+                    <input type="checkbox" id="chk-less-sugar-cust" style="margin: 0; cursor: pointer;"> Less Sugar
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; user-select: none;">
+                    <input type="checkbox" id="chk-no-sugar-cust" style="margin: 0; cursor: pointer;"> No Sugar
+                </label>
+                <label id="label-less-ice-cust" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; border: 1px solid #d1d5db; user-select: none;">
+                    <input type="checkbox" id="chk-less-ice-cust" style="margin: 0; cursor: pointer;"> Less Ice
+                </label>
+            </div>
+            
             <label style="font-size: 13px; font-weight: 600; color: #5d6b66;">Catatan Tambahan (Opsional)</label>
             <!-- 🔥 Kasih id="inputCatatan" biar bisa dikontrol Javascript -->
-            <input type="text" id="inputCatatan" name="keterangan" placeholder="Contoh: Less ice, less sugar..." autocomplete="off">
+            <input type="text" id="inputCatatan" placeholder="Contoh: jangan di-press, dsb..." autocomplete="off">
+            <input type="hidden" id="hiddenKeterangan" name="keterangan">
 
             <div id="warningStokModal" style="display: none; color: #c62828; font-size: 13px; font-weight: 700; margin-top: 10px; text-align: center;">⚠️ Varian ini sedang Sold Out!</div>
             <button type="submit" id="btnSubmitOrder" class="btn" style="margin-top: 10px;">+ Tambah ke Keranjang</button>
@@ -484,11 +499,19 @@
     // FUNGSI MODAL
     let varianStokSaatIni = {}; 
 
-    // 🔥 TAMBAHIN PARAMETER bisaSyrup DI PALING UJUNG SINI BANG 🔥
-    function openModal(id, nama, tipeProduk, tersediaHot, tersediaIce, stokVarian, bisaSyrup) {
+    // 🔥 TAMBAHIN PARAMETER bisaSyrup & deskripsi DI PALING UJUNG SINI BANG 🔥
+    function openModal(id, nama, tipeProduk, tersediaHot, tersediaIce, stokVarian, bisaSyrup, deskripsi) {
         document.getElementById('orderModal').classList.add('active');
         document.getElementById('modalProdukId').value = id;
         document.getElementById('modalNamaProduk').innerText = nama;
+        
+        const deskripsiEl = document.getElementById('modalDeskripsiProduk');
+        if (deskripsi && deskripsi.trim() !== '') {
+            deskripsiEl.innerText = deskripsi;
+            deskripsiEl.style.display = 'block';
+        } else {
+            deskripsiEl.style.display = 'none';
+        }
 
         const outletAktif = '{{ $outlet }}';
         document.getElementById('formModalOrder').action = `/order/${outletAktif}/tambah`;
@@ -497,19 +520,27 @@
         const pilihanTipe = document.getElementById('pilihanTipe');
         const tipeSelect = document.getElementById('tipeSelect');
         const inputCatatan = document.getElementById('inputCatatan'); // Ambil elemen catatan
+        const opsiCepat = document.getElementById('opsi-cepat-customer');
+
+        // Reset checkbox
+        document.getElementById('chk-less-sugar-cust').checked = false;
+        document.getElementById('chk-no-sugar-cust').checked = false;
+        document.getElementById('chk-less-ice-cust').checked = false;
 
         tipeSelect.innerHTML = '';
 
         if (tipeProduk === 'vendor') {
             pilihanUkuran.style.display = 'none';
             pilihanTipe.style.display = 'none';
+            opsiCepat.style.display = 'none'; // Sembunyikan opsi cepat untuk makanan
             // 🔥 Kalau makanan (vendor), ubah contoh catatannya!
             inputCatatan.placeholder = "Contoh: Dipanaskan, potong 2...";
         } else {
             pilihanUkuran.style.display = 'block';
             pilihanTipe.style.display = 'block';
+            opsiCepat.style.display = 'flex'; // Tampilkan opsi cepat untuk minuman
             // 🔥 Kalau minuman, balikin contoh catatannya!
-            inputCatatan.placeholder = "Contoh: Less ice, less sugar...";
+            inputCatatan.placeholder = "Contoh: Di-press yang kuat...";
             
             if (tersediaIce == 1) tipeSelect.innerHTML += '<option value="ice">Ice</option>';
             if (tersediaHot == 1) tipeSelect.innerHTML += '<option value="hot">Hot</option>';
@@ -529,11 +560,32 @@
         // Simpan json stok dan langsung cek ketersediaannya saat modal kebuka
         varianStokSaatIni = stokVarian;
         cekStokVarianModal(); 
+        triggerTipeChange();
     }
 
     // Deteksi kalau pelanggan ganti-ganti dropdown ukuran / tipe
     document.getElementById('ukuranSelect').addEventListener('change', cekStokVarianModal);
-    document.getElementById('tipeSelect').addEventListener('change', cekStokVarianModal);
+    document.getElementById('tipeSelect').addEventListener('change', function() {
+        cekStokVarianModal();
+        let val = this.value;
+        let labelIce = document.getElementById('label-less-ice-cust');
+        let chkIce = document.getElementById('chk-less-ice-cust');
+        if (val === 'hot') {
+            labelIce.style.display = 'none';
+            chkIce.checked = false;
+        } else {
+            labelIce.style.display = 'flex';
+        }
+    });
+
+    // Jalankan satu kali event handler tipeSelect saat buka modal minuman
+    function triggerTipeChange() {
+        let ts = document.getElementById('tipeSelect');
+        if(ts.options.length > 0) {
+            let event = new Event('change');
+            ts.dispatchEvent(event);
+        }
+    }
 
     function cekStokVarianModal() {
         const tipeProduk = document.getElementById('pilihanTipe').style.display === 'none' ? 'vendor' : 'racikan';
@@ -572,6 +624,19 @@
     function closeModal() {
         document.getElementById('orderModal').classList.remove('active');
     }
+
+    // Intercept form submit untuk gabungkan Keterangan
+    document.getElementById('formModalOrder').addEventListener('submit', function(e) {
+        let ketManual = document.getElementById('inputCatatan').value.trim();
+        let arrayKet = [];
+
+        if (document.getElementById('chk-less-sugar-cust').checked) arrayKet.push("Less Sugar");
+        if (document.getElementById('chk-no-sugar-cust').checked) arrayKet.push("No Sugar");
+        if (document.getElementById('chk-less-ice-cust').checked) arrayKet.push("Less Ice");
+        if (ketManual !== "") arrayKet.push(ketManual);
+
+        document.getElementById('hiddenKeterangan').value = arrayKet.join(', ');
+    });
     
     // SIHIR JAVASCRIPT: Auto ganti warna menu navigasi (pill) saat di scroll!
     document.addEventListener("DOMContentLoaded", function() {

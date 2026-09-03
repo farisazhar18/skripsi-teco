@@ -158,6 +158,14 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
     Route::post('/bahan-baku/distribusi/{distribusi_id}/lapor', [\App\Http\Controllers\BahanBakuController::class, 'storeSelisih'])
         ->middleware('role:owner,barista')
         ->name('bahan-baku.store-selisih');
+    Route::get('/bahan-baku/nonaktif', [BahanBakuController::class, 'indexNonaktif'])
+        ->middleware('role:owner,operational_manager,logistik')
+        ->name('bahan-baku.nonaktif');
+        
+    Route::post('/bahan-baku/{id}/aktifkan', [BahanBakuController::class, 'aktifkan'])
+        ->middleware('role:owner,operational_manager,logistik')
+        ->name('bahan-baku.aktifkan');
+
 
     Route::resource('bahan-baku', BahanBakuController::class)
         ->middleware('role:owner,operational_manager,logistik,barista');

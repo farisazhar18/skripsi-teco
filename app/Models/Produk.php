@@ -9,6 +9,7 @@ class Produk extends Model
     protected $fillable = [
         'foto',
         'nama_produk',
+        'deskripsi',
         'kategori',
         'is_event',
         'bisa_extra_syrup',

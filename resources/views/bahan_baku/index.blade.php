@@ -78,6 +78,9 @@
         <a href="/bahan-baku/create" class="btn btn-action-bar">
             ➕ Tambah Bahan Baku
         </a>
+        <a href="{{ route('bahan-baku.nonaktif') }}" class="btn" style="background: #e2e8f0; color: #475569;">
+            🗑️ Bahan Baku Nonaktif
+        </a>
     @endif
 
     <!-- TOMBOL REKAP KELUAR (YANG LAMA) -->
@@ -166,16 +169,20 @@
                 <td>
                     <div class="flex gap-sm items-center justify-center">
                         
+                        <!-- Tombol Edit: Cuma buat Owner (full edit) dan Barista (buat lapor selisih stok) -->
+                        @if(auth()->user()->role == 'owner' || auth()->user()->role == 'barista')
                         <a href="/bahan-baku/{{ $item->id }}/edit" class="action-link" style="text-decoration: none; padding: 6px 12px; font-size: 13px; border-radius: 6px;">
                             Edit
                         </a>
+                        @endif
 
+                        <!-- Tombol Nonaktifkan: Bisa diakses Logistik, Manager, Owner -->
                         @if(auth()->user()->role == 'logistik' || auth()->user()->role == 'operational_manager' || auth()->user()->role == 'owner')
                             <form action="{{ route('bahan-baku.destroy', $item->id) }}" method="POST" class="m-0">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="action-link" onclick="return confirm('Yakin ingin menghapus bahan baku ini?')" style="color: #c62828; border: none; cursor: pointer; padding: 6px 12px; font-size: 13px; border-radius: 6px;">
-                                    Hapus
+                                <button type="submit" class="action-link" onclick="return confirm('Yakin ingin menonaktifkan bahan baku ini?')" style="color: #c62828; border: none; cursor: pointer; padding: 6px 12px; font-size: 13px; border-radius: 6px;">
+                                    Nonaktifkan
                                 </button>
                             </form>
                         @endif

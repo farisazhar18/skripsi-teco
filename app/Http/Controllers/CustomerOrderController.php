@@ -89,34 +89,6 @@ class CustomerOrderController extends Controller
             $harga = $ukuran == 'large' ? $produk->harga_large : $produk->harga_reguler;
         }
 
-        // 2. CEK STOK BAHAN BAKU VIA RESEP (SATU PINTU BUAT SEMUA PRODUK)
-        $resep = ResepProduk::with('detailResepProduks.bahanBaku')
-                    ->where('produk_id', $produk->id)
-                    ->where('ukuran', $ukuran)
-                    ->where('tipe', $tipe)
-                    ->first();
-
-        if (!$resep) {
-            $namaVarian = $produk->tipe_produk == 'vendor' ? $produk->nama_produk : ucfirst($tipe) . ' ' . ucfirst($ukuran);
-            return redirect()->back()->withErrors(['Maaf, resep/stok dasar untuk ' . $namaVarian . ' belum tersedia di sistem.']);
-        }
-
-        foreach ($resep->detailResepProduks as $detail) {
-            $bahanAsli = $detail->bahanBaku;
-            
-            if (!$bahanAsli) continue;
-
-            $stokDiOutlet = BahanBaku::where('nama_bahan', $bahanAsli->nama_bahan)
-                    ->where('outlet', $outlet)
-                    ->sum('stok');
-
-            $totalKebutuhan = $detail->jumlah * $jumlah;
-
-            if ($stokDiOutlet < $totalKebutuhan) {
-                return redirect()->back()->withErrors(['Maaf, stok ' . $produk->nama_produk . ' sedang tidak mencukupi.']);
-            }
-        }
-
         $keteranganPesanan = $request->keterangan ?? ''; 
         
         // Kita cek, apakah customer milih sirup dan bukan "tidak"
@@ -135,10 +107,7 @@ class CustomerOrderController extends Controller
         // Ngitung subtotal pakai harga yang udah ditambah sirup
         $subtotal = $harga * $jumlah;
 
-        $key = 'keranjang_' . $outlet;
-        $keranjang = session($key, []);
-
-        $keranjang[] = [
+        $newItem = [
             'produk_id' => $produk->id,
             'nama_produk' => $produk->nama_produk,
             'ukuran' => $ukuran,
@@ -146,10 +115,23 @@ class CustomerOrderController extends Controller
             'jumlah' => $jumlah,
             'harga' => $harga,
             'subtotal' => $subtotal,
-            
-            // 🔥 PENTING: Keterangan ubah pakai variabel baru kita 🔥
             'keterangan' => $keteranganPesanan, 
         ];
+
+        try {
+            DB::beginTransaction();
+            $this->adjustStockForCartItem($newItem, $outlet, true);
+            $this->refreshCartTimer();
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors([$e->getMessage()]);
+        }
+
+        $key = 'keranjang_' . $outlet;
+        $keranjang = session($key, []);
+
+        $keranjang[] = $newItem;
 
         session([$key => $keranjang]);
 
@@ -185,6 +167,17 @@ class CustomerOrderController extends Controller
         $keranjang = session($key, []);
 
         if (isset($keranjang[$request->index])) {
+            $item = $keranjang[$request->index];
+            
+            try {
+                DB::beginTransaction();
+                $this->adjustStockForCartItem($item, $outlet, false); // Kembalikan stok
+                $this->refreshCartTimer();
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+            }
+
             unset($keranjang[$request->index]);
             $keranjang = array_values($keranjang);
             session([$key => $keranjang]);
@@ -238,17 +231,9 @@ class CustomerOrderController extends Controller
                 'sumber_order' => 'customer_qr',
             ]);
 
-            // 3. Simpan Detail & Update Stok
+            // 3. Simpan Detail 
+            // (Stok sudah dipotong saat masuk keranjang, jadi di sini cuma simpan DetailPenjualan)
             foreach ($keranjang as $item) {
-                $produk = Produk::findOrFail($item['produk_id']);
-                $resep = ResepProduk::with('detailResepProduks.bahanBaku')
-                    ->where('produk_id', $produk->id)
-                    ->where('ukuran', $item['ukuran'])
-                    ->where('tipe', $item['tipe'])
-                    ->first();
-
-                if (!$resep) throw new \Exception('Resep produk ' . $item['nama_produk'] . ' belum tersedia.');
-
                 DetailPenjualan::create([
                     'penjualan_id' => $penjualan->id,
                     'produk_id' => $item['produk_id'],
@@ -259,72 +244,37 @@ class CustomerOrderController extends Controller
                     'subtotal' => $item['subtotal'],
                     'keterangan' => $item['keterangan'] ?? null,
                 ]);
+            }
 
-                foreach ($resep->detailResepProduks as $detail) {
-                    $bahanResep = $detail->bahanBaku;
-                    $bahanOutlet = BahanBaku::where('nama_bahan', $bahanResep->nama_bahan)
-                        ->where('satuan', $bahanResep->satuan)
-                        ->where('outlet', $outlet)
-                        ->first();
+            // 4. Update status Riwayat Penggunaan Bahan (Ditahan -> Terjual)
+            $sessionId = session()->getId();
+            $riwayats = RiwayatPenggunaanBahan::where('keterangan', 'LIKE', '% - ' . $sessionId)->get();
+            
+            if ($riwayats->isEmpty()) {
+                throw new \Exception('Keranjang Anda telah kedaluwarsa (15 menit tanpa aktivitas). Silakan pesan ulang.');
+            }
 
-                    if (!$bahanOutlet || $bahanOutlet->stok < ($detail->jumlah * $item['jumlah'])) {
-                        throw new \Exception('Stok untuk ' . $item['nama_produk'] . ' tidak cukup.');
-                    }
-                    $bahanOutlet->stok -= ($detail->jumlah * $item['jumlah']);
-                    $bahanOutlet->save();
-
-                    // --- SELIPKAN KODE INI UNTUK MENCATAT RIWAYAT PENGGUNAAN ---
-                    RiwayatPenggunaanBahan::create([
-                        'bahan_baku_id' => $bahanOutlet->id,
-                        'outlet' => $outlet,
-                        'jumlah_terpakai' => ($detail->jumlah * $item['jumlah']),
-                        'keterangan' => 'Terjual (QR Customer) - Order #' . $penjualan->id
-                    ]);
+            foreach($riwayats as $riwayat) {
+                if (str_contains($riwayat->keterangan, 'Extra Syrup')) {
+                    preg_match('/Extra Syrup\s+([^\s]+)/', $riwayat->keterangan, $matches);
+                    $namaSirup = $matches[1] ?? '';
+                    $riwayat->keterangan = 'Extra Syrup ' . $namaSirup . ' (QR Customer) - Order #' . $penjualan->id;
+                } else {
+                    $riwayat->keterangan = 'Terjual (QR Customer) - Order #' . $penjualan->id;
                 }
-
-                    // 🔥 SELIPKAN DI SINI BANG 🔥
-                $keterangan = $item['keterangan'] ?? '';
-                
-                if (!empty($keterangan) && str_contains($keterangan, 'Extra Syrup:')) {
-                    preg_match('/Extra Syrup:\s*([^|]+)/', $keterangan, $matches);
-                    
-                    if (isset($matches[1])) {
-                        $namaSirup = trim($matches[1]);
-                        
-                        $bahanSirupOutlet = \App\Models\BahanBaku::where('nama_bahan', 'LIKE', '%' . $namaSirup . '%')
-                            ->where('outlet', $outlet) // Di controller ini variabelnya $outlet
-                            ->first();
-
-                        if ($bahanSirupOutlet) {
-                            $takaranSirup = 20; // Ubah sesuai takaran ml/pcs di kafe lu
-                            $jumlahSirupTerpakai = $takaranSirup * $item['jumlah']; 
-
-                            if ($bahanSirupOutlet->stok >= $jumlahSirupTerpakai) {
-                                $bahanSirupOutlet->stok -= $jumlahSirupTerpakai;
-                                $bahanSirupOutlet->save();
-
-                                \App\Models\RiwayatPenggunaanBahan::create([
-                                    'bahan_baku_id' => $bahanSirupOutlet->id,
-                                    'outlet' => $outlet,
-                                    'jumlah_terpakai' => $jumlahSirupTerpakai,
-                                    'keterangan' => 'Extra Syrup ' . $namaSirup . ' (QR Customer) - Order #' . $penjualan->id
-                                ]);
-                            }
-                        }
-                    }
-                }
-                // ----------------------------
+                $riwayat->save();
             }
 
             DB::commit(); // Transaksi aman!
             session()->forget($key); // Kosongkan keranjang
+            session()->forget('cart_last_activity');
 
             // --- INI TAMBAHAN KODENYA BANG ---
             // Simpan ID pesanan ke session biar kedetect di halaman menu
             session(['order_id_' . $outlet => $penjualan->id]);
             // ---------------------------------
 
-            // 4. Proses Midtrans (Hanya jika QRIS)
+            // 5. Proses Midtrans (Hanya jika QRIS)
             $snapToken = null;
             if ($request->metode_pembayaran === 'QRIS') {
                 if ($penjualan->snap_token) {
@@ -349,11 +299,15 @@ class CustomerOrderController extends Controller
                 }
             }
 
-            // 5. Akhirnya return view sekali saja
+            // 6. Akhirnya return view sekali saja
             return view('customer.bayar', compact('penjualan', 'outlet', 'snapToken'));
 
         } catch (\Exception $e) {
             DB::rollBack();
+            if (str_contains($e->getMessage(), 'kedaluwarsa')) {
+                session()->forget($key);
+                session()->forget('cart_last_activity');
+            }
             return back()->withErrors(['Terjadi kesalahan: ' . $e->getMessage()]);
         }
     }
@@ -495,45 +449,168 @@ class CustomerOrderController extends Controller
         $index = $request->index;
 
         if(isset($keranjang[$index])) {
-            // 1. Panggil data produk aslinya dari database buat ngecek harga
-            $produk_id = $keranjang[$index]['produk_id'];
+            $oldItem = $keranjang[$index];
+            $produk_id = $oldItem['produk_id'];
             $produk = \App\Models\Produk::find($produk_id);
 
             if($produk) {
-                // 2. Update jumlah & keterangan dari inputan modal
-                $keranjang[$index]['jumlah'] = $request->jumlah;
-                $keranjang[$index]['keterangan'] = $request->keterangan;
+                $newItem = $oldItem;
+                $newItem['jumlah'] = $request->jumlah;
+                $newItem['keterangan'] = $request->keterangan;
                 
-                // 3. Kalau bukan food, update ukuran & tipe
                 if($request->tipe_bawaan != 'food') {
-                    $keranjang[$index]['ukuran'] = $request->ukuran;
-                    $keranjang[$index]['tipe'] = $request->tipe;
+                    $newItem['ukuran'] = $request->ukuran;
+                    $newItem['tipe'] = $request->tipe;
                 }
                 
-                // 4. LOGIKA HITUNG ULANG HARGA
                 $hargaBase = 0;
                 if ($produk->tipe_produk == 'vendor') {
                     $hargaBase = $produk->harga_reguler;
                 } else {
-                    // Cek kalau ukurannya large, pakai harga large
-                    $hargaBase = ($keranjang[$index]['ukuran'] == 'large') ? $produk->harga_large : $produk->harga_reguler;
+                    $hargaBase = ($newItem['ukuran'] == 'large') ? $produk->harga_large : $produk->harga_reguler;
                 }
 
-                // 5. Cek kalau di keterangan ada tulisan Extra Syrup, tambahin 3000
-                if (!empty($keranjang[$index]['keterangan']) && str_contains(strtolower($keranjang[$index]['keterangan']), 'extra syrup')) {
+                if (!empty($newItem['keterangan']) && str_contains(strtolower($newItem['keterangan']), 'extra syrup')) {
                     $hargaBase += 3000;
                 }
 
-                // 6. Update harga satuan dan subtotal (harga satuan x jumlah beli)
-                $keranjang[$index]['harga'] = $hargaBase;
-                $keranjang[$index]['subtotal'] = $hargaBase * $request->jumlah;
+                $newItem['harga'] = $hargaBase;
+                $newItem['subtotal'] = $hargaBase * $request->jumlah;
                 
-                // 7. Simpan kembali ke session
-                session()->put("keranjang_$outlet", $keranjang);
+                try {
+                    DB::beginTransaction();
+                    // 1. Kembalikan stok item lama
+                    $this->adjustStockForCartItem($oldItem, $outlet, false);
+                    // 2. Potong stok item baru
+                    $this->adjustStockForCartItem($newItem, $outlet, true);
+                    $this->refreshCartTimer();
+                    DB::commit();
+                    
+                    // Jika sukses potong stok, simpan ke session
+                    $keranjang[$index] = $newItem;
+                    session()->put("keranjang_$outlet", $keranjang);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return redirect()->back()->withErrors([$e->getMessage()]);
+                }
             }
         }
         
-        // Balikin ke halaman keranjang
         return redirect()->back()->with('success', 'Item keranjang berhasil diperbarui.');
+    }
+
+    private function adjustStockForCartItem($item, $outlet, $isAdding = true)
+    {
+        $produk = Produk::findOrFail($item['produk_id']);
+        
+        $resep = ResepProduk::with('detailResepProduks.bahanBaku')
+            ->where('produk_id', $produk->id)
+            ->where('ukuran', $item['ukuran'])
+            ->where('tipe', $item['tipe'])
+            ->first();
+
+        if ($isAdding && !$resep) {
+            $namaVarian = $produk->tipe_produk == 'vendor' ? $produk->nama_produk : ucfirst($item['tipe']) . ' ' . ucfirst($item['ukuran']);
+            throw new \Exception('Maaf, resep/stok dasar untuk ' . $namaVarian . ' belum tersedia di sistem.');
+        }
+
+        if ($resep) {
+            foreach ($resep->detailResepProduks as $detail) {
+                $bahanResep = $detail->bahanBaku;
+                if (!$bahanResep) continue;
+
+                $bahanOutlet = BahanBaku::where('nama_bahan', $bahanResep->nama_bahan)
+                    ->where('satuan', $bahanResep->satuan)
+                    ->where('outlet', $outlet)
+                    ->first();
+
+                if ($bahanOutlet) {
+                    $totalKebutuhan = $detail->jumlah * $item['jumlah'];
+                    if ($isAdding) {
+                        if ($bahanOutlet->stok < $totalKebutuhan) {
+                            throw new \Exception('Maaf, stok ' . $produk->nama_produk . ' sedang tidak mencukupi.');
+                        }
+                        $bahanOutlet->stok -= $totalKebutuhan;
+                        RiwayatPenggunaanBahan::create([
+                            'bahan_baku_id' => $bahanOutlet->id,
+                            'outlet' => $outlet,
+                            'jumlah_terpakai' => $totalKebutuhan,
+                            'keterangan' => 'Ditahan (Masuk Keranjang) - ' . session()->getId()
+                        ]);
+                    } else {
+                        $bahanOutlet->stok += $totalKebutuhan;
+                        
+                        // Hapus riwayat penahanan stok
+                        $riwayat = RiwayatPenggunaanBahan::where('bahan_baku_id', $bahanOutlet->id)
+                            ->where('outlet', $outlet)
+                            ->where('jumlah_terpakai', $totalKebutuhan)
+                            ->where('keterangan', 'Ditahan (Masuk Keranjang) - ' . session()->getId())
+                            ->orderBy('created_at', 'desc')
+                            ->first();
+
+                        if ($riwayat) {
+                            $riwayat->delete();
+                        }
+                    }
+                    $bahanOutlet->save();
+                } elseif ($isAdding) {
+                     throw new \Exception('Maaf, stok ' . $produk->nama_produk . ' sedang tidak mencukupi.');
+                }
+            }
+        }
+
+        // Handle Extra Syrup
+        $keterangan = $item['keterangan'] ?? '';
+        if (!empty($keterangan) && str_contains(strtolower($keterangan), 'extra syrup:')) {
+            preg_match('/Extra Syrup:\s*([^|]+)/i', $keterangan, $matches);
+            if (isset($matches[1])) {
+                $namaSirup = trim($matches[1]);
+                $bahanSirupOutlet = BahanBaku::where('nama_bahan', 'LIKE', '%' . $namaSirup . '%')
+                    ->where('outlet', $outlet)
+                    ->first();
+
+                if ($bahanSirupOutlet) {
+                    $takaranSirup = 20; 
+                    $jumlahSirupTerpakai = $takaranSirup * $item['jumlah']; 
+
+                    if ($isAdding) {
+                        if ($bahanSirupOutlet->stok < $jumlahSirupTerpakai) {
+                            throw new \Exception('Maaf, stok sirup ' . $namaSirup . ' tidak mencukupi.');
+                        }
+                        $bahanSirupOutlet->stok -= $jumlahSirupTerpakai;
+                        RiwayatPenggunaanBahan::create([
+                            'bahan_baku_id' => $bahanSirupOutlet->id,
+                            'outlet' => $outlet,
+                            'jumlah_terpakai' => $jumlahSirupTerpakai,
+                            'keterangan' => 'Ditahan Extra Syrup ' . $namaSirup . ' (Keranjang) - ' . session()->getId()
+                        ]);
+                    } else {
+                        $bahanSirupOutlet->stok += $jumlahSirupTerpakai;
+                        
+                        // Hapus riwayat penahanan sirup
+                        $riwayatSirup = RiwayatPenggunaanBahan::where('bahan_baku_id', $bahanSirupOutlet->id)
+                            ->where('outlet', $outlet)
+                            ->where('jumlah_terpakai', $jumlahSirupTerpakai)
+                            ->where('keterangan', 'Ditahan Extra Syrup ' . $namaSirup . ' (Keranjang) - ' . session()->getId())
+                            ->orderBy('created_at', 'desc')
+                            ->first();
+
+                        if ($riwayatSirup) {
+                            $riwayatSirup->delete();
+                        }
+                    }
+                    $bahanSirupOutlet->save();
+                }
+            }
+        }
+    }
+
+    private function refreshCartTimer()
+    {
+        session(['cart_last_activity' => now()]);
+        
+        $sessionId = session()->getId();
+        RiwayatPenggunaanBahan::where('keterangan', 'LIKE', '% - ' . $sessionId)
+            ->update(['created_at' => now()]);
     }
 }

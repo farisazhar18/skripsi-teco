@@ -43,6 +43,11 @@
     </div>
 
     <div class="form-group">
+        <label>Deskripsi Produk (Opsional)</label>
+        <textarea name="deskripsi" rows="3" placeholder="Tuliskan deskripsi ala cafe untuk customer...">{{ $produk->deskripsi }}</textarea>
+    </div>
+
+    <div class="form-group">
         <label>Kategori</label>
         <select name="kategori" id="kategori" required>
             <option value="Coffee" {{ $produk->kategori == 'Coffee' ? 'selected' : '' }}>Coffee</option>

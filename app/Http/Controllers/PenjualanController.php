@@ -20,9 +20,15 @@ class PenjualanController extends Controller
     {
         $user = auth()->user();
 
-        // 1. Siapkan query dasar (ambil data yang statusnya belum selesai)
-        $query = Penjualan::with('detailPenjualans.produk')
-            ->whereIn('status', ['menunggu_pembayaran', 'menunggu', 'diproses', 'Siap diambil']);
+        // 1. Siapkan query dasar
+        if (request('tab') == 'selesai') {
+            $query = Penjualan::with('detailPenjualans.produk')
+                ->where('status', 'selesai')
+                ->whereDate('tanggal', now()->toDateString());
+        } else {
+            $query = Penjualan::with('detailPenjualans.produk')
+                ->whereIn('status', ['menunggu_pembayaran', 'menunggu', 'diproses', 'Siap diambil']);
+        }
 
         // 2. LOGIKA FILTER OUTLET & ROLE: 
         if (in_array($user->role, ['kasir', 'barista'])) {
@@ -89,6 +95,7 @@ class PenjualanController extends Controller
                 'no_urut_bulanan' => $noUrutBaru,
                 'tanggal' => now(),
                 'total_harga' => $totalHarga,
+                'uang_diterima' => $request->uang_diterima ?? null,
                 'metode_pembayaran' => $request->metode_bayar,
                 'status' => $statusAwal, 
                 'outlet' => $outletAktif, 
@@ -292,11 +299,14 @@ class PenjualanController extends Controller
         return redirect('/penjualan')->with('success', 'Data penjualan berhasil dihapus.');
     }
 
-    public function konfirmasiPembayaran($id)
+    public function konfirmasiPembayaran(Request $request, $id)
     {
         $penjualan = Penjualan::findOrFail($id);
-        // Ubah status ke 'menunggu' supaya barista bisa mulai proses
-        $penjualan->update(['status' => 'menunggu']); 
+        // Ubah status ke 'menunggu' supaya barista bisa mulai proses, dan simpan uang diterima
+        $penjualan->update([
+            'status' => 'menunggu',
+            'uang_diterima' => $request->uang_diterima ?? $penjualan->uang_diterima
+        ]); 
         
         return redirect()->back()->with('success', 'Pembayaran tunai berhasil dikonfirmasi!');
     }

@@ -13,6 +13,7 @@ class Penjualan extends Model
         'nama_customer',
         'no_hp',
         'total_harga',
+        'uang_diterima',
         'metode_pembayaran',
         'status',
         'sumber_order',

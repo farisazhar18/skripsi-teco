@@ -57,7 +57,7 @@
             <table class="table">
                 <tr>
                     <td>No. Pesanan</td>
-                    <td class="text-right">#TC-{{ date('ym', strtotime($penjualan->tanggal)) }}-{{ str_pad($penjualan->no_urut_bulanan, 4, '0', STR_PAD_LEFT) }}</td>
+                    <td class="text-right">#{{ $penjualan->outlet == 'hasanuddin' ? 'TCH' : 'TCM' }}-{{ date('ym', strtotime($penjualan->tanggal)) }}-{{ str_pad($penjualan->no_urut_bulanan, 4, '0', STR_PAD_LEFT) }}</td>
                 </tr>
                 <tr>
                     <td>Tanggal</td>
@@ -116,6 +116,16 @@
                 <td>TOTAL</td>
                 <td class="text-right">Rp {{ number_format($penjualan->total_harga) }}</td>
             </tr>
+            @if($penjualan->metode_pembayaran == 'Tunai' && !empty($penjualan->uang_diterima))
+                <tr>
+                    <td>Tunai</td>
+                    <td class="text-right">Rp {{ number_format($penjualan->uang_diterima) }}</td>
+                </tr>
+                <tr>
+                    <td>Kembalian</td>
+                    <td class="text-right">Rp {{ number_format($penjualan->uang_diterima - $penjualan->total_harga) }}</td>
+                </tr>
+            @endif
         </table>
 
         <div class="divider"></div>

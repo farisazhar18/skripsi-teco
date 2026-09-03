@@ -41,6 +41,7 @@ class ProdukController extends Controller
     {
         $request->validate([
             'nama_produk' => 'required',
+            'deskripsi' => 'nullable|string',
             'kategori' => 'required',
             'is_event' => 'nullable',
             'harga_reguler' => 'nullable|numeric',
@@ -64,6 +65,7 @@ class ProdukController extends Controller
 
         Produk::create([
             'nama_produk' => $request->nama_produk,
+            'deskripsi' => $request->deskripsi,
             'foto' => $namaFoto, // <-- UDAH DIBENERIN BIAR GAK DOBEL
             'kategori' => $request->kategori,
             'is_event' => $request->has('is_event'), // <-- INI YANG KETINGGALAN TADI
@@ -84,6 +86,7 @@ class ProdukController extends Controller
     {
         $request->validate([
             'nama_produk' => 'required',
+            'deskripsi' => 'nullable|string',
             'kategori' => 'required',
             'is_event' => 'nullable', // <-- UDAH DIBENERIN JUGA
             'harga_reguler' => 'nullable|numeric',
@@ -107,6 +110,7 @@ class ProdukController extends Controller
 
         $produk->update([
             'nama_produk' => $request->nama_produk,
+            'deskripsi' => $request->deskripsi,
             'foto' => $namaFoto, 
             'kategori' => $request->kategori,
             'is_event' => $request->has('is_event'), // <-- INI YANG KETINGGALAN TADI
