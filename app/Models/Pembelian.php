@@ -16,6 +16,9 @@ class Pembelian extends Model
         'status_distribusi',
         'keterangan',
         'status_acc', // <--- WAJIB TAMBAHKAN BARIS INI
+        'is_po_dicetak',
+        'po_number',
+        'nama_supplier',
     ];
 
     public function bahanBaku()

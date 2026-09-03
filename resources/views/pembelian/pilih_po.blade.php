@@ -12,9 +12,9 @@
             <input type="text" name="nama_supplier" placeholder="Contoh: Toko Makmur / PT Indofood" style="width: 100%; max-width: 400px; padding: 10px; border-radius: 8px; border: 1px solid #c9bca8; margin-top: 5px;">
         </div>
 
-        <h3 style="color: #0f7a3a; margin-bottom: 10px;">Pilih Barang yang Mau Dibeli:</h3>
+        <h3 style="color: #0f7a3a; margin-bottom: 10px;">📝 Langkah 1: Pilih Barang yang Mau Dibeli</h3>
         
-        @if($pembelians->count() > 0)
+        @if($belumDicetak->count() > 0)
             <table class="table" style="width: 100%; text-align: left; border-collapse: collapse;">
                 <thead>
                     <tr style="background: #183f37; color: white;">
@@ -25,25 +25,18 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($pembelians as $item)
-                    <tr style="border-bottom: 1px solid #eae5dc; {{ $item->is_po_dicetak ? 'background-color: #f9fafb; opacity: 0.6;' : '' }}">
+                    @foreach($belumDicetak as $item)
+                    <tr style="border-bottom: 1px solid #eae5dc;">
                         <td style="padding: 10px; text-align: center;">
-                            @if($item->is_po_dicetak)
-                                <input type="checkbox" disabled style="transform: scale(1.5);">
-                            @else
-                                <input type="checkbox" name="pembelian_ids[]" value="{{ $item->id }}" style="transform: scale(1.5);">
-                            @endif
+                            <input type="checkbox" name="pembelian_ids[]" value="{{ $item->id }}" style="transform: scale(1.5);">
                         </td>
-                        <td style="padding: 10px; {{ $item->is_po_dicetak ? 'color: #9ca3af;' : '' }}">
+                        <td style="padding: 10px;">
                             {{ date('d-m-Y', strtotime($item->updated_at ?? $item->tanggal)) }}
-                            @if($item->is_po_dicetak)
-                                <br><span style="font-size: 11px; font-weight: bold; color: #059669;">✅ PO Sudah Dicetak</span>
-                            @endif
                         </td>
-                        <td style="padding: 10px; font-weight: bold; {{ $item->is_po_dicetak ? 'color: #9ca3af;' : '' }}">
+                        <td style="padding: 10px; font-weight: bold;">
                             {{ $item->bahanBaku->nama_bahan ?? '-' }}
                         </td>
-                        <td style="padding: 10px; {{ $item->is_po_dicetak ? 'color: #9ca3af;' : '' }}">
+                        <td style="padding: 10px;">
                             {{ $item->jumlah }} {{ $item->satuan_beli }}
                         </td>
                     </tr>
@@ -56,33 +49,82 @@
             </div>
         @else
             <div style="padding: 20px; background: #fff4e5; color: #b56a00; border-radius: 10px;">
-                Belum ada pengajuan yang menunggu diproses pembelian.
+                Semua barang sudah di-generate PO-nya (Silakan cek di tabel Riwayat PO di bawah).
             </div>
         @endif
     </form>
 
-    @if($pembelians->count() > 0)
+    <hr style="margin: 30px 0; border: none; border-top: 2px dashed #e2e8f0;">
+
+    <!-- TABEL 2: RIWAYAT PO SUDAH DICETAK -->
+    <h3 style="color: #1e293b; margin-bottom: 10px;">🗂️ Langkah 2: Riwayat PO yang Sudah Dicetak</h3>
+    <p style="color: #64748b; font-size: 14px; margin-top: -5px; margin-bottom: 15px;">Daftar barang ini siap diproses beli. Jika ada kesalahan, Anda bisa membatalkannya di sini.</p>
+
+    @if($sudahDicetak->count() > 0)
+        <table class="table" style="width: 100%; text-align: left; border-collapse: collapse; background: #f8fafc;">
+            <thead>
+                <tr style="background: #475569; color: white;">
+                    <th style="padding: 10px;">No PO & Supplier</th>
+                    <th style="padding: 10px;">Nama Bahan</th>
+                    <th style="padding: 10px;">Jumlah</th>
+                    <th style="padding: 10px; text-align: center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($sudahDicetak as $item)
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px;">
+                        <span style="font-weight: bold; color: #0f7a3a;">{{ $item->po_number }}</span><br>
+                        <span style="font-size: 12px; color: #64748b;">Supplier: {{ $item->nama_supplier ?? 'Tanpa Nama' }}</span>
+                    </td>
+                    <td style="padding: 10px; font-weight: bold; color: #334155;">
+                        {{ $item->bahanBaku->nama_bahan ?? '-' }}
+                    </td>
+                    <td style="padding: 10px; color: #475569;">
+                        {{ $item->jumlah }} {{ $item->satuan_beli }}
+                    </td>
+                    <td style="padding: 10px; text-align: center;">
+                        <form action="{{ route('pembelian.batalPO', $item->id) }}" method="POST" style="display: inline-block;">
+                            @csrf
+                            <button type="submit" onclick="return confirm('Batalkan cetak PO untuk barang ini? Barang akan kembali ke daftar atas.');" class="btn-sm" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; cursor: pointer; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold;">
+                                ↩️ Batalkan & Edit
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <div style="padding: 20px; background: #f1f5f9; color: #64748b; border-radius: 10px;">
+            Belum ada PO yang dicetak.
+        </div>
+    @endif
+
     <hr style="margin: 30px 0; border: none; border-top: 2px dashed #e2e8f0;">
 
     <!-- FORM SELESAI (Ubah Status) -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
         <div>
-            <h3 style="color: #1e293b; margin: 0 0 5px 0;">Sudah Selesai Mencetak Semua PO?</h3>
-            <p style="color: #64748b; margin: 0; font-size: 14px;">Klik tombol di samping untuk melanjutkan status barang menjadi Menunggu Barang Datang.</p>
+            <h3 style="color: #1e293b; margin: 0 0 5px 0;">Langkah 3: Proses Pengadaan</h3>
+            <p style="color: #64748b; margin: 0; font-size: 14px;">Jika semua PO di Riwayat sudah benar, klik tombol di samping untuk melanjutkan.</p>
         </div>
         <div style="display: flex; gap: 10px;">
             <a href="{{ route('pembelian.pengajuan') }}" class="btn-secondary" style="padding: 12px 20px; border-radius: 8px; text-decoration: none;">← Kembali ke Daftar</a>
             
-            <form action="{{ route('pembelian.prosesBeliMassal') }}" method="POST">
-                @csrf
-                <button class="btn" style="background: #0284c7; padding: 12px 24px; border-radius: 8px; border:none; color:white; cursor:pointer; font-size: 15px;">
+            @if($sudahDicetak->count() > 0)
+                <form action="{{ route('pembelian.prosesBeliMassal') }}" method="POST">
+                    @csrf
+                    <button class="btn" style="background: #0284c7; padding: 12px 24px; border-radius: 8px; border:none; color:white; cursor:pointer; font-size: 15px;">
+                        🚚 Tandai Semua Sedang Dibeli
+                    </button>
+                </form>
+            @else
+                <button class="btn" disabled style="background: #94a3b8; padding: 12px 24px; border-radius: 8px; border:none; color:white; cursor:not-allowed; font-size: 15px;">
                     🚚 Tandai Semua Sedang Dibeli
                 </button>
-            </form>
+            @endif
         </div>
     </div>
-    @else
-    <a href="{{ route('pembelian.pengajuan') }}" class="btn-secondary" style="margin-top: 15px; display: inline-block;">Kembali</a>
-    @endif
 </div>
 @endsection

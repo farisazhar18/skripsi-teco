@@ -205,6 +205,8 @@ Route::middleware(['auth', 'check.outlet'])->group(function () {
         ->name('pembelian.pilihPO');
     Route::post('/pembelian/cetak-po-multi', [App\Http\Controllers\PembelianController::class, 'cetakPOMulti'])
         ->name('pembelian.cetakPOMulti');
+    Route::post('/pembelian/{id}/batal-po', [App\Http\Controllers\PembelianController::class, 'batalPO'])
+        ->name('pembelian.batalPO');
 
     // Menu Pengadaan/Stok (Untuk Distribusi ke Outlet)
     Route::get('/pengadaan-stok', [PembelianController::class, 'indexStok'])

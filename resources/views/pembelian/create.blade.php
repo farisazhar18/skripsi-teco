@@ -26,7 +26,7 @@
             📦 Cek Stok Gudang
             @php
                 $habisCount = $stokGudang->where('stok', '<=', 0)->count();
-                $menipisCount = $stokGudang->filter(function($b){ return $b->stok > 0 && $b->stok <= $b->stok_minimum; })->count();
+                $menipisCount = $stokGudang->filter(function($b){ return $b->stok > 0 && $b->stok < $b->stok_minimum; })->count();
             @endphp
             @if($habisCount > 0)
                 <span style="background: #dc2626; color: white; padding: 2px 8px; border-radius: 50px; font-size: 12px;">{{ $habisCount }} Habis</span>
@@ -99,7 +99,7 @@
                         @foreach($stokGudang as $bahan)
                         @php
                             $isHabis = $bahan->stok <= 0;
-                            $isMenipis = !$isHabis && $bahan->stok <= $bahan->stok_minimum;
+                            $isMenipis = !$isHabis && $bahan->stok < $bahan->stok_minimum;
                             $isAman = !$isHabis && !$isMenipis;
                             
                             if ($isHabis) {
@@ -121,8 +121,21 @@
                             
                             $saranBeli = $bahan->stok_minimum > $bahan->stok ? ($bahan->stok_minimum - $bahan->stok) * 2 : 1;
                             if($saranBeli <= 0) $saranBeli = 1;
+
+                            $saranSatuan = $bahan->satuan;
+                            if (str_contains(strtolower($bahan->nama_bahan), 'soda water')) {
+                                $saranSatuan = 'botol';
+                                $saranBeli = ceil($saranBeli / 250);
+                            } elseif (strtolower($bahan->satuan) == 'ml') {
+                                $saranSatuan = 'liter';
+                                $saranBeli = ceil($saranBeli / 1000);
+                            } elseif (strtolower($bahan->satuan) == 'gram') {
+                                $saranSatuan = 'kg';
+                                $saranBeli = ceil($saranBeli / 1000);
+                            }
+                            if($saranBeli <= 0) $saranBeli = 1;
                         @endphp
-                        <tr class="row-stok-gudang" data-status="{{ $statusKey }}" data-outlet="{{ strtolower($bahan->outlet ?? '') }}" data-kategori="{{ strtolower($bahan->kategori ?? '') }}" data-nama="{{ strtolower($bahan->nama_bahan) }}" data-id="{{ $bahan->id }}" style="border-bottom: 1px solid #e5e7eb; background-color: {{ $rowBg }};">
+                        <tr class="row-stok-gudang" data-status="{{ $statusKey }}" data-satuan-beli="{{ $saranSatuan }}" data-outlet="{{ strtolower($bahan->outlet ?? '') }}" data-kategori="{{ strtolower($bahan->kategori ?? '') }}" data-nama="{{ strtolower($bahan->nama_bahan) }}" data-id="{{ $bahan->id }}" style="border-bottom: 1px solid #e5e7eb; background-color: {{ $rowBg }};">
                             <td style="padding: 12px 10px; text-align: center;">
                                 <input type="checkbox" class="chk-modal-bahan" style="transform: scale(1.3); cursor: pointer;">
                             </td>
@@ -147,7 +160,10 @@
                                 </span>
                             </td>
                             <td style="padding: 12px 10px; text-align: center;">
-                                <input type="number" class="input-modal-jumlah" value="{{ $saranBeli }}" min="1" style="width: 70px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 5px;">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <input type="number" class="input-modal-jumlah" value="{{ $saranBeli }}" min="1" style="width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 5px;">
+                                    <span style="font-size: 13px; color: #64748b;">{{ $saranSatuan }}</span>
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -352,8 +368,8 @@
 
             $('.chk-modal-bahan:checked').each(function() {
                 var row = $(this).closest('tr');
-                var id = row.data('id'); 
-                var nama = row.data('nama');
+                var nama = row.attr('data-nama');
+                var satuanBeli = row.attr('data-satuan-beli');
                 var jumlah = parseFloat(row.find('.input-modal-jumlah').val());
 
                 if (isNaN(jumlah) || jumlah <= 0) {
@@ -362,7 +378,14 @@
                     return false; // break loop
                 }
 
-                itemsToAdd.push({ id: id, jumlah: jumlah });
+                // Cari apakah bahan dengan nama ini sudah ada di daftar
+                var existingItem = itemsToAdd.find(function(item) { return item.nama === nama; });
+                if (existingItem) {
+                    // Kalau ada, tambahkan jumlahnya biar tidak duplikat baris
+                    existingItem.jumlah += jumlah;
+                } else {
+                    itemsToAdd.push({ nama: nama, jumlah: jumlah, satuanBeli: satuanBeli });
+                }
             });
 
             if (hasError) return;
@@ -372,10 +395,17 @@
                 return;
             }
 
+            // Destroy Select2 yang lama dulu biar bersih
+            $('.select2-bahan').each(function() {
+                if ($(this).hasClass('select2-hidden-accessible')) {
+                    $(this).select2('destroy');
+                }
+            });
+
             // Kosongkan tabel utama
             $('#tbody-pengajuan').empty();
 
-            // Masukkan data terpilih ke tabel utama
+            // Masukkan data terpilih ke tabel utama (TANPA selected attribute)
             itemsToAdd.forEach(function(item) {
                 var newRow = `
                     <tr style="border-bottom: 1px solid #eee;">
@@ -383,7 +413,7 @@
                             <select name="bahan_baku_id[]" class="select2-bahan" style="width: 100%;" required>
                                 <option value="">-- Pilih Bahan Baku --</option>
                                 @foreach($bahanBaku as $bahanItem)
-                                    <option value="{{ $bahanItem->id }}" data-satuan="{{ strtolower($bahanItem->satuan) }}" data-nama="{{ strtolower($bahanItem->nama_bahan) }}" ${item.nama === '{{ strtolower($bahanItem->nama_bahan) }}' ? 'selected' : ''}>
+                                    <option value="{{ $bahanItem->id }}" data-satuan="{{ strtolower($bahanItem->satuan) }}" data-nama="{{ strtolower($bahanItem->nama_bahan) }}">
                                         {{ $bahanItem->nama_bahan }} (Stok: {{ $bahanItem->satuan }})
                                     </option>
                                 @endforeach
@@ -410,10 +440,30 @@
                 $('#tbody-pengajuan').append(newRow);
             });
 
-            // Re-inisialisasi Select2 dan trigger change untuk ngisi dropdown satuan beli
+            // Re-inisialisasi Select2
             initSelect2();
-            $('.select2-bahan').trigger('change');
-            
+
+            // 🔥 SET VALUE PAKAI SELECT2 API (lebih reliable dari selected attribute)
+            var rows = $('#tbody-pengajuan tr');
+            itemsToAdd.forEach(function(item, index) {
+                var selectEl = rows.eq(index).find('.select2-bahan');
+                // Cari option yang namanya cocok
+                var matchVal = null;
+                selectEl.find('option').each(function() {
+                    if ($(this).attr('data-nama') === item.nama) {
+                        matchVal = $(this).val();
+                        return false; // break
+                    }
+                });
+                if (matchVal) {
+                    selectEl.val(matchVal).trigger('change');
+                    // Karena trigger('change') akan mengisi opsi satuan beli secara sinkron,
+                    // kita bisa langsung set value satuan beli di bawahnya.
+                    var satuanEl = rows.eq(index).find('.satuan-beli');
+                    satuanEl.val(item.satuanBeli);
+                }
+            });
+
             // Tutup modal otomatis setelah apply
             document.getElementById('modalStokGudang').style.display = 'none';
         });

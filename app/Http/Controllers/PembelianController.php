@@ -104,7 +104,7 @@ class PembelianController extends Controller
             ->get();
 
         // Data stok untuk modal cek stok (per outlet)
-        $stokGudang = BahanBaku::orderByRaw('CASE WHEN stok <= 0 THEN 0 WHEN stok <= stok_minimum THEN 1 ELSE 2 END ASC')
+        $stokGudang = BahanBaku::orderByRaw('CASE WHEN stok <= 0 THEN 0 WHEN stok < stok_minimum THEN 1 ELSE 2 END ASC')
             ->orderBy('outlet')
             ->orderBy('kategori')
             ->orderBy('nama_bahan')
@@ -411,12 +411,39 @@ class PembelianController extends Controller
     public function pilihPO()
     {
         // Ambil HANYA barang yang statusnya nunggu pembelian (sudah ACC Manager)
-        $pembelians = Pembelian::with('bahanBaku')
+        $belumDicetak = Pembelian::with('bahanBaku')
             ->where('status_acc', 'menunggu_pembelian')
+            ->where('is_po_dicetak', false)
             ->orderBy('tanggal', 'desc')
             ->get();
             
-        return view('pembelian.pilih_po', compact('pembelians'));
+        $sudahDicetak = Pembelian::with('bahanBaku')
+            ->where('status_acc', 'menunggu_pembelian')
+            ->where('is_po_dicetak', true)
+            ->orderBy('po_number', 'desc')
+            ->orderBy('tanggal', 'desc')
+            ->get();
+            
+        return view('pembelian.pilih_po', compact('belumDicetak', 'sudahDicetak'));
+    }
+
+    // FUNGSI BARU: BATAL CETAK PO / EDIT ULANG
+    public function batalPO($id)
+    {
+        $pembelian = Pembelian::findOrFail($id);
+        
+        if ($pembelian->status_acc != 'menunggu_pembelian') {
+            return back()->withErrors(['Status tidak valid.']);
+        }
+
+        // Reset status cetak PO
+        $pembelian->update([
+            'is_po_dicetak' => false,
+            'po_number' => null,
+            'nama_supplier' => null
+        ]);
+
+        return back()->with('success', 'Berhasil membatalkan cetak PO! Barang telah dikembalikan ke daftar belum dicetak.');
     }
 
     // FUNGSI BUAT CETAK PDF MULTIPLE BARANG
@@ -441,8 +468,8 @@ class PembelianController extends Controller
 
         $nama_supplier = $request->nama_supplier ?? '.......................................';
 
-        // Generate PO number unik per setiap klik Generate PDF (berdasarkan timestamp)
-        $po_number = 'PO-' . date('Ymd-His') . '-' . strtoupper(substr(md5(uniqid()), 0, 4));
+        // Generate PO number unik per setiap klik Generate PDF (berdasarkan kodifikasi: PO-YYYYMMDD-00XX)
+        $po_number = 'PO-' . date('Ymd') . '-' . str_pad($pengadaanKe, 4, '0', STR_PAD_LEFT);
 
         // Tandai bahwa barang-barang ini sudah dicetak PO-nya dan beri nomor PO + nama supplier
         Pembelian::whereIn('id', $request->pembelian_ids)->update([

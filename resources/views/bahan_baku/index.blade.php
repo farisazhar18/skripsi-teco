@@ -162,7 +162,7 @@
                     @elseif($item->stok < $item->stok_minimum)
                         <span class="badge-modern badge-stok-menipis">Stok Menipis</span>
                     @else
-                        <span class="badge-modern badge-stok-tersedia">Stok Tersedia</span>
+                        <span class="badge-modern badge-stok-tersedia">Stok Aman</span>
                     @endif
                 </td>
 
