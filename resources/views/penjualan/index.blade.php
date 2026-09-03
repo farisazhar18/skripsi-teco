@@ -21,9 +21,21 @@
         @endif
     </div>
     
-    <!-- Filter Nama Real-time (Tanpa Tombol Cari) -->
-    <div class="search-box">
-        <input type="text" id="inputCariNama" oninput="filterNama()" placeholder="Cari nama pelanggan..." class="search-input">
+    <!-- Filter Urutan dan Filter Nama Real-time -->
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <form action="{{ route('penjualan.index') }}" method="GET" style="margin: 0;">
+            @if(request('tab'))
+                <input type="hidden" name="tab" value="{{ request('tab') }}">
+            @endif
+            <select name="sort" onchange="this.form.submit()" style="padding: 8px 15px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; cursor: pointer; background: white; font-weight: 500; color: #475569;">
+                @php $currentSort = request('sort') ?: (request('tab') == 'selesai' ? 'baru' : 'lama'); @endphp
+                <option value="baru" {{ $currentSort == 'baru' ? 'selected' : '' }}>⬇️ Terbaru - Terlama</option>
+                <option value="lama" {{ $currentSort == 'lama' ? 'selected' : '' }}>⬆️ Terlama - Terbaru</option>
+            </select>
+        </form>
+        <div class="search-box" style="margin: 0;">
+            <input type="text" id="inputCariNama" oninput="filterNama()" placeholder="Cari nama pelanggan..." class="search-input">
+        </div>
     </div>
 </div>
 

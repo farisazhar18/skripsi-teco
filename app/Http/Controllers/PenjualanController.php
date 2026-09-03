@@ -40,8 +40,21 @@ class PenjualanController extends Controller
             $query->where('status', '!=', 'menunggu_pembayaran');
         }
 
-        // 3. Eksekusi query dan urutkan dari pesanan yang paling lama ngantre
-        $penjualans = $query->orderBy('created_at', 'asc')->get();
+        // 3. Logika Filter Urutan
+        $sort = request('sort');
+        
+        // Default: Kalau tab selesai, tampilkan yang terbaru dulu. Kalau antrean, tampilkan yang terlama dulu.
+        if (!$sort) {
+            $sort = (request('tab') == 'selesai') ? 'baru' : 'lama';
+        }
+
+        if ($sort == 'baru') {
+            $query->orderBy('created_at', 'desc');
+        } else {
+            $query->orderBy('created_at', 'asc');
+        }
+
+        $penjualans = $query->get();
         
         return view('penjualan.index', compact('penjualans'));
     }
