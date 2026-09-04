@@ -49,6 +49,16 @@ class DashboardController extends Controller
             ->whereDate('tanggal', now()->toDateString())
             ->sum('total_harga');
 
+        $pendapatanTunaiHariIni = (clone $penjualanQuery)
+            ->whereDate('tanggal', now()->toDateString())
+            ->where('metode_pembayaran', 'Tunai')
+            ->sum('total_harga');
+
+        $pendapatanQrisHariIni = (clone $penjualanQuery)
+            ->whereDate('tanggal', now()->toDateString())
+            ->where('metode_pembayaran', 'QRIS')
+            ->sum('total_harga');
+
         $pendapatanBulanIni = (clone $penjualanQuery)
             ->whereMonth('tanggal', now()->month)
             ->whereYear('tanggal', now()->year)
@@ -140,6 +150,12 @@ class DashboardController extends Controller
         // 3. LOGIKA INVENTORI & STOK
         // =========================================================
         $totalPembelian = Pembelian::count();
+        
+        // Status Pengadaan
+        $pengajuanMenungguAcc = Pembelian::whereNull('status_acc')->orWhere('status_acc', 'pending')->count();
+        $pengadaanMenungguPo = Pembelian::where('status_acc', 'menunggu_pembelian')->count();
+        $pengadaanMenungguBarang = Pembelian::where('status_acc', 'menunggu_barang')->count();
+
         $totalDistribusi = Distribusi::when($outlet, function ($query) use ($outlet) {
                 $query->where('outlet', $outlet);
             })
@@ -214,7 +230,12 @@ class DashboardController extends Controller
             'totalPembelian',
             'totalDistribusi',
             'pendapatanHariIni',
+            'pendapatanTunaiHariIni',
+            'pendapatanQrisHariIni',
             'pendapatanBulanIni',
+            'pengajuanMenungguAcc',
+            'pengadaanMenungguPo',
+            'pengadaanMenungguBarang',
             'stokMenipis',
             'stokHabis',
             'stokMenipisList',

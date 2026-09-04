@@ -99,6 +99,16 @@
                 <div class="stat-value money">Rp {{ number_format($pendapatanBulanIni) }}</div>
                 <div class="stat-icon">💰</div>
             </div>
+            
+            <div class="stat-card" style="{{ $pengajuanMenungguAcc > 0 ? 'border-top: 5px solid #e67e22; background: #fffaf0;' : '' }}">
+                <div class="stat-label">Pengajuan Butuh ACC</div>
+                <div class="stat-value" style="{{ $pengajuanMenungguAcc > 0 ? 'color: #e67e22;' : '' }}">{{ $pengajuanMenungguAcc }} <span style="font-size: 14px; font-weight: normal; color: #6b6256;">Pengajuan</span></div>
+                <div class="stat-icon">📝</div>
+                @if($pengajuanMenungguAcc > 0)
+                    <a href="{{ route('pembelian.indexPengajuan') }}" style="position: absolute; right: 15px; top: 15px; background: #e67e22; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; text-decoration: none;">Cek Sekarang</a>
+                @endif
+            </div>
+
             <div class="stat-card">
                 <div class="stat-label">Total Transaksi</div>
                 <div class="stat-value">{{ $totalPenjualan }} <span style="font-size: 14px; font-weight: normal; color: #6b6256;">Pesanan</span></div>
@@ -187,10 +197,15 @@
 
         <div class="section-title">💸 Laporan Kasir Hari Ini</div>
         <div class="grid-stats">
-            <div class="stat-card">
-                <div class="stat-label">Pendapatan Masuk</div>
-                <div class="stat-value money">Rp {{ number_format($pendapatanHariIni) }}</div>
+            <div class="stat-card" style="border-bottom: 5px solid #10b981;">
+                <div class="stat-label">Uang Tunai (Laci)</div>
+                <div class="stat-value money" style="color: #059669; font-size: 24px;">Rp {{ number_format($pendapatanTunaiHariIni) }}</div>
                 <div class="stat-icon">💵</div>
+            </div>
+            <div class="stat-card" style="border-bottom: 5px solid #3b82f6;">
+                <div class="stat-label">Uang Digital (QRIS)</div>
+                <div class="stat-value money" style="color: #2563eb; font-size: 24px;">Rp {{ number_format($pendapatanQrisHariIni) }}</div>
+                <div class="stat-icon">📱</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Pesanan Selesai</div>
@@ -255,22 +270,22 @@
 
 
     @if($role == 'logistik')
-        <div class="section-title">📦 Aktivitas Gudang</div>
+        <div class="section-title">📦 Aktivitas Gudang (Tugas Logistik)</div>
         <div class="grid-stats">
-            <div class="stat-card">
-                <div class="stat-label">Jenis Bahan Baku</div>
-                <div class="stat-value">{{ $totalBahanBaku }}</div>
+            <div class="stat-card" style="background: #fff3d8; border: 1px solid #fce3b8;">
+                <div class="stat-label" style="color: #b56a00;">Buat PO Pembelian</div>
+                <div class="stat-value" style="color: #b56a00;">{{ $pengadaanMenungguPo }}</div>
                 <div class="stat-icon">📋</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Pengadaan ke Vendor</div>
-                <div class="stat-value">{{ $totalPembelian }}</div>
-                <div class="stat-icon">🛒</div>
+            <div class="stat-card" style="background: #e0f2fe; border: 1px solid #bae6fd;">
+                <div class="stat-label" style="color: #0284c7;">Menunggu Barang Datang</div>
+                <div class="stat-value" style="color: #0284c7;">{{ $pengadaanMenungguBarang }}</div>
+                <div class="stat-icon">🚚</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Distribusi ke Outlet</div>
+                <div class="stat-label">Total Distribusi (Sepanjang Masa)</div>
                 <div class="stat-value">{{ $totalDistribusi }}</div>
-                <div class="stat-icon">🚚</div>
+                <div class="stat-icon">📦</div>
             </div>
         </div>
     @endif
