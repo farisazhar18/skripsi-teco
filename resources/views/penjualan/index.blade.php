@@ -254,9 +254,11 @@
         });
     }
 
+    let autoRefreshTimer = null;
+    
     // 3. Auto Refresh Ditahan Kalau Lagi Ngetik Filter & Gak jalan di tab Selesai
     if (isTabSelesai === "false") {
-        let autoRefreshTimer = setInterval(function() { 
+        autoRefreshTimer = setInterval(function() { 
             let searchInput = document.getElementById('inputCariNama');
             // Jangan refresh kalau inputan lagi diklik, ATAU ada teks pencariannya
             if(document.activeElement !== searchInput && searchInput.value.trim() === '') {
